@@ -1,0 +1,26 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  html, body, #root { height: 100%; }
+  body {
+    @apply bg-mist text-ink font-body text-base antialiased;
+    margin: 0;
+  }
+  h1, h2, h3 { @apply font-display font-bold text-ink; }
+  /* Visible keyboard focus everywhere (accessibility) */
+  :focus-visible { outline: 3px solid #7C3AED; outline-offset: 3px; border-radius: 12px; }
+  @media (prefers-reduced-motion: reduce) {
+    * { animation-duration: .01ms !important; transition-duration: .01ms !important; }
+  }
+}
+
+@layer components {
+  /* Every tappable target is at least 56px tall (HCI goal: large buttons) */
+  .btn { @apply inline-flex items-center justify-center gap-3 min-h-[56px] px-6 rounded-pill font-display font-semibold text-lg transition active:scale-[.98]; }
+  .btn-primary { @apply btn bg-garden-600 text-white hover:bg-garden-700; }
+  .btn-soft { @apply btn bg-white text-garden-700 border-2 border-mint-200 hover:bg-mint-100; }
+  .card { @apply bg-white rounded-card shadow-soft border border-mint-200; }
+  .tile { @apply rounded-card border-2 p-4 text-left min-h-[120px] flex flex-col justify-between transition active:scale-[.98]; }
+}

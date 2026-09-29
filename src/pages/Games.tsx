@@ -1,12 +1,12 @@
 import { Link } from 'react-router-dom'
-import { User, Brain, Home, Flower2 } from 'lucide-react'
+import { UserRound, Shapes, ListOrdered, ScanSearch } from 'lucide-react'
 import PageHeader from '@/components/PageHeader'
 
 const GAMES = [
-  { id: 'faces',    title: 'Familiar Faces',  sub: 'Who is this person?', icon: User,    cls: 'bg-mint-100 border-garden-500 text-garden-900' },
-  { id: 'match',    title: 'Memory Match',    sub: 'Match the pairs',     icon: Brain,   cls: 'bg-rose-soft border-rose-main text-rose-deep' },
-  { id: 'story',    title: 'Story Recall',    sub: 'Remember the tale',   icon: Home,    cls: 'bg-iris-soft border-iris-main text-iris-deep' },
-  { id: 'sequence', title: 'Memory Sequence', sub: 'Follow the pattern',  icon: Flower2, cls: 'bg-sun-soft border-sun-main text-sun-deep' },
+  { id: 'faces',    title: 'Familiar Faces',         sub: 'Recognize familiar people', icon: UserRound, cls: 'bg-mint-100 border-garden-500 text-garden-900' },
+  { id: 'match',    title: 'Pattern & Shape Match',  sub: 'Complete a visual pattern', icon: Shapes, cls: 'bg-rose-soft border-rose-main text-rose-deep' },
+  { id: 'sequence', title: 'Sequence Memory',        sub: 'Study, hide, rebuild', icon: ListOrdered, cls: 'bg-sun-soft border-sun-main text-sun-deep' },
+  { id: 'category', title: 'Odd One Out',             sub: 'Find the item from another group', icon: ScanSearch, cls: 'bg-iris-soft border-iris-main text-iris-deep' },
 ]
 
 export default function Games() {
@@ -24,7 +24,7 @@ export default function Games() {
           </Link>
         ))}
       </div>
-      <p className="mt-8 text-center text-ink/70">Activities use your personal photos and memories</p>
+      <p className="mt-8 text-center text-ink/70">Activities use the personal photos and memories shared with Anchor.</p>
     </>
   )
 }

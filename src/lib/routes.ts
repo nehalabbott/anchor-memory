@@ -9,5 +9,7 @@ export const NAV = [
 const LABELS: Record<string, string> = {
   '/': 'Home', '/games': 'Choose an Activity', '/garden': 'Your Memory Garden',
   '/profile': 'My Journey', '/memories': 'Your Memories',
+  '/games/faces': 'Familiar Faces', '/games/match': 'Pattern & Shape Match',
+  '/games/sequence': 'Sequence Memory', '/games/category': 'Odd One Out',
 }
 export const screenLabel = (path: string) => LABELS[path] ?? 'this'

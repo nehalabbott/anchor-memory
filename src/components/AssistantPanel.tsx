@@ -11,7 +11,7 @@ const SUGGESTIONS = ['What can you do?', 'I want to play a game', 'Tell me about
 /** Slide-up assistant sheet: chat + voice + quick actions from the Lab 5 "How can I help?" screen. */
 export default function AssistantPanel() {
   const { assistantOpen, toggleAssistant, chat, addChat, userName, memories, interactionState,
-          speechEnabled, setSpeechEnabled, logEvent } = useApp()
+      speechEnabled, setSpeechEnabled, logEvent, assistantAction, assistantPrompt, clearAssistantAction } = useApp()
   const loc = useLocation()
   const [text, setText] = useState('')
   const [listening, setListening] = useState(false)
@@ -29,6 +29,14 @@ export default function AssistantPanel() {
     if (assistantOpen && window.matchMedia?.('(pointer: fine)').matches) inputRef.current?.focus()
     if (!assistantOpen) { recRef.current?.stop(); stopSpeaking(); setListening(false) }
   }, [assistantOpen])
+
+  useEffect(() => {
+    if (!assistantOpen || !assistantAction) return
+    const action = assistantAction
+    const prompt = assistantPrompt
+    clearAssistantAction()
+    quick(action, prompt ?? undefined)
+  }, [assistantOpen, assistantAction, assistantPrompt])
 
   useEffect(() => { endRef.current?.scrollIntoView({ behavior: 'smooth' }) }, [chat, thinking])
 
@@ -68,10 +76,10 @@ export default function AssistantPanel() {
     })
   }
 
-  function quick(kind: 'clue' | 'easier' | 'break') {
-    if (kind === 'clue') logEvent({ type: 'help_request', at: Date.now() })
+  function quick(kind: 'clue' | 'easier' | 'break', contextualPrompt?: string) {
+    if (kind === 'clue' || kind === 'easier') logEvent({ type: 'help_request', at: Date.now() })
     const prompts = { clue: 'Give me a clue', easier: 'Try an easier question', break: 'I need a gentle break' }
-    send(prompts[kind])
+    send(contextualPrompt ?? prompts[kind])
   }
 
   if (!assistantOpen) return null

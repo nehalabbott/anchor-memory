@@ -1,9 +1,10 @@
 import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
-import type { ChatMessage, InteractionEvent, InteractionState, MediaReference, MemoryItem, MemoryKind, SupportedPerson } from '@/lib/types'
+import type { ChatMessage, InteractionEvent, InteractionState, MediaReference, MemoryItem, MemoryKind, SessionExperience, SupportedPerson } from '@/lib/types'
 import { mediaRepository } from '@/lib/mediaRepository'
 
-type PersistedAppState = Pick<AppState, 'userName' | 'supportedPerson' | 'memories' | 'chat' | 'speechEnabled' | 'largeText'>
+type AssistantAction = 'clue' | 'easier' | 'break'
+type PersistedAppState = Pick<AppState, 'userName' | 'supportedPerson' | 'memories' | 'chat' | 'speechEnabled' | 'largeText' | 'lastSessionExperience'>
 type NewMemoryItem = Omit<MemoryItem, 'id' | 'createdAt' | 'kind'> & { kind?: MemoryKind }
 
 interface AppState {
@@ -11,8 +12,11 @@ interface AppState {
   supportedPerson: SupportedPerson
   caregiverMode: boolean
   memories: MemoryItem[]
+  lastSessionExperience: SessionExperience | null
   chat: ChatMessage[]
   assistantOpen: boolean
+  assistantAction: AssistantAction | null
+  assistantPrompt: string | null
   events: InteractionEvent[]          // Part 3 reads this
   interactionState: InteractionState  // Part 3 writes this
   speechEnabled: boolean              // read replies aloud
@@ -20,6 +24,13 @@ interface AppState {
 
   setUserName: (n: string) => void
   setSupportedPerson: (person: Pick<SupportedPerson, 'name' | 'personalDetails'>) => void
+  addMemory: (m: NewMemoryItem) => void
+  updateMemory: (id: string, m: NewMemoryItem) => void
+  deleteMemory: (id: string) => void
+  replaceMemories: (memories: MemoryItem[]) => void
+  recordSessionExperience: (experience: SessionExperience) => void
+  requestAssistantAction: (action: AssistantAction, prompt?: string) => void
+  clearAssistantAction: () => void
   toggleAssistant: (open?: boolean) => void
   addChat: (m: Omit<ChatMessage, 'id' | 'at'>) => void
   clearChat: () => void
@@ -27,7 +38,6 @@ interface AppState {
   setInteractionState: (s: InteractionState) => void
   setSpeechEnabled: (v: boolean) => void
   setLargeText: (v: boolean) => void
-  addMemory: (m: NewMemoryItem) => void
 }
 
 const uid = () => Math.random().toString(36).slice(2, 10)
@@ -37,6 +47,9 @@ const isMediaReference = (value: unknown): value is MediaReference =>
   (value.kind === 'photo' || value.kind === 'voice') &&
   (value.storage === 'indexeddb' || value.storage === 'remote') &&
   typeof value.mimeType === 'string'
+const isSessionExperience = (value: unknown): value is SessionExperience =>
+  isRecord(value) && (value.kind === 'flourishing' || value.kind === 'calming') &&
+  (value.reportedBy === 'supported_person' || value.reportedBy === 'caregiver') && typeof value.at === 'number'
 
 function legacyMediaMimeType(url: string, kind: 'photo' | 'voice') {
   if (url.startsWith('data:')) return url.slice(5, url.indexOf(';') > -1 ? url.indexOf(';') : url.indexOf(',')) || 'application/octet-stream'
@@ -97,6 +110,7 @@ export async function migratePersistedAppState(value: unknown): Promise<Persiste
     chat: Array.isArray(state.chat) ? state.chat as ChatMessage[] : [],
     speechEnabled: typeof state.speechEnabled === 'boolean' ? state.speechEnabled : true,
     largeText: typeof state.largeText === 'boolean' ? state.largeText : false,
+    lastSessionExperience: isSessionExperience(state.lastSessionExperience) ? state.lastSessionExperience : null,
   } as PersistedAppState
 }
 
@@ -110,8 +124,11 @@ export const useApp = create<AppState>()(
         { id: 'seed-1', kind: 'person', name: 'Rahul', relationship: 'son', story: 'Loves cricket and lives in Bangalore.', createdAt: Date.now() },
         { id: 'seed-2', kind: 'person', name: 'Lily', relationship: 'grandparent', story: 'Taught me to bake apple pie every Sunday morning.', createdAt: Date.now() },
       ],
+      lastSessionExperience: null,
       chat: [],
       assistantOpen: false,
+      assistantAction: null,
+      assistantPrompt: null,
       events: [],
       interactionState: 'normal',
       speechEnabled: true,
@@ -122,6 +139,15 @@ export const useApp = create<AppState>()(
         userName: name,
         supportedPerson: { ...s.supportedPerson, name, personalDetails, updatedAt: Date.now() },
       })),
+      addMemory: (m) => set((s) => ({ memories: [...s.memories, { ...m, kind: m.kind ?? (m.relationship ? 'person' : 'story'), id: uid(), createdAt: Date.now() }] })),
+      updateMemory: (id, m) => set((s) => ({ memories: s.memories.map((memory) => memory.id === id
+        ? { ...memory, ...m, kind: m.kind ?? (m.relationship ? 'person' : 'story'), id, createdAt: memory.createdAt }
+        : memory) })),
+      deleteMemory: (id) => set((s) => ({ memories: s.memories.filter((memory) => memory.id !== id) })),
+      replaceMemories: (memories) => set({ memories }),
+      recordSessionExperience: (lastSessionExperience) => set({ lastSessionExperience }),
+      requestAssistantAction: (assistantAction, assistantPrompt) => set({ assistantOpen: true, assistantAction, assistantPrompt: assistantPrompt ?? null }),
+      clearAssistantAction: () => set({ assistantAction: null, assistantPrompt: null }),
       toggleAssistant: (open) => set((s) => ({ assistantOpen: open ?? !s.assistantOpen })),
       addChat: (m) => set((s) => ({ chat: [...s.chat, { ...m, id: uid(), at: Date.now() }].slice(-60) })),
       clearChat: () => set({ chat: [] }),
@@ -129,7 +155,6 @@ export const useApp = create<AppState>()(
       setInteractionState: (interactionState) => set({ interactionState }),
       setSpeechEnabled: (speechEnabled) => set({ speechEnabled }),
       setLargeText: (largeText) => set({ largeText }),
-      addMemory: (m) => set((s) => ({ memories: [...s.memories, { ...m, kind: m.kind ?? (m.relationship ? 'person' : 'story'), id: uid(), createdAt: Date.now() }] })),
     }),
     {
       name: 'anchor-v1',
@@ -138,6 +163,7 @@ export const useApp = create<AppState>()(
       // Don't persist transient signals
       partialize: (s) => ({
         userName: s.userName, supportedPerson: s.supportedPerson, memories: s.memories, chat: s.chat,
+        lastSessionExperience: s.lastSessionExperience,
         speechEnabled: s.speechEnabled, largeText: s.largeText,
       }),
     },

@@ -1,30 +1,46 @@
-import { Home, Brain, Flower2, Lightbulb } from 'lucide-react'
+import { ChevronRight, Flower2, HeartHandshake } from 'lucide-react'
+import { Link } from 'react-router-dom'
 import PageHeader from '@/components/PageHeader'
+import { gardenStateFor } from '@/games/gardenState'
 import { useApp } from '@/store/useApp'
 
 export default function Profile() {
-  const { memories, events, largeText, setLargeText, speechEnabled, setSpeechEnabled, userName, setUserName } = useApp()
-  const hints = events.filter((e) => e.type === 'help_request').length
-  const rows = [
-    { icon: Home,      t: 'Memories Explored', s: `${memories.length} memories saved`, cls: 'bg-sky-soft text-sky-main' },
-    { icon: Brain,     t: 'Games Enjoyed',     s: 'Games arrive in Part 2',           cls: 'bg-rose-soft text-rose-main' },
-    { icon: Flower2,   t: 'Garden Growth',     s: 'Your garden is blooming',          cls: 'bg-garden-100 text-garden-600' },
-    { icon: Lightbulb, t: 'Gentle Moments',    s: `${hints} times you asked for a hint, and that's perfectly okay`, cls: 'bg-sun-soft text-sun-main' },
-  ]
+  const { memories, lastSessionExperience, toggleAssistant, largeText, setLargeText, speechEnabled, setSpeechEnabled, userName, setUserName } = useApp()
+  const gardenState = gardenStateFor(lastSessionExperience, memories.length)
+  const gardenPreview = gardenState.experience === 'flourishing' ? 'The garden is blooming.'
+    : gardenState.experience === 'calming' ? "A quiet moment is waiting in the garden."
+      : 'A peaceful place to rest and reflect.'
   return (
     <>
       <PageHeader title="My Journey" />
-      <ul className="space-y-3">
-        {rows.map(({ icon: Icon, t, s, cls }) => (
-          <li key={t} className="card p-4 flex items-center gap-4">
-            <span className={`w-14 h-14 rounded-full flex items-center justify-center shrink-0 ${cls}`} aria-hidden><Icon size={26} /></span>
-            <span><span className="block font-display font-bold text-lg">{t}</span><span className="text-ink/70">{s}</span></span>
-          </li>
-        ))}
-      </ul>
-      <p className="mt-4 rounded-card border-2 border-garden-500 bg-mint-100 p-4 text-garden-900">
-        Every step you take is a gift to yourself. There is no wrong way to explore your memories.
-      </p>
+
+      <button type="button" onClick={() => toggleAssistant(true)} aria-label="A Helping Hand. Open Mo assistant" className="card mt-3 flex min-h-[88px] w-full items-center gap-4 p-4 text-left">
+        <span className="flex h-14 w-14 shrink-0 items-center justify-center rounded-full bg-sun-soft text-sun-deep" aria-hidden><HeartHandshake size={28} /></span>
+        <span className="min-w-0 flex-1">
+          <span className="block font-display text-lg font-bold">A Helping Hand</span>
+          <span className="block text-ink/75">Open Mo for a clue, an easier prompt, or a quiet break.</span>
+        </span>
+        <ChevronRight size={24} aria-hidden />
+      </button>
+
+      <section className="mt-6" aria-labelledby="profile-memories-heading">
+        <div className="card p-4">
+          <h2 id="profile-memories-heading" className="text-xl">Personal Memories</h2>
+          <p className="mt-1 text-ink/75">Familiar details shared with Anchor.</p>
+          {memories.length === 0 && <p className="mt-2 text-ink/70">Your personal memories will appear on the memories page.</p>}
+          <Link to="/memories" className="btn-primary mt-3 w-full">View all memories</Link>
+        </div>
+      </section>
+
+      <Link to="/garden" aria-label={`Recent Memory Garden. ${gardenPreview}`} className="card mt-3 flex min-h-[88px] items-center gap-4 p-4">
+        <span className="flex h-14 w-14 shrink-0 items-center justify-center rounded-full bg-garden-100 text-garden-700" aria-hidden><Flower2 size={28} /></span>
+        <span className="min-w-0 flex-1">
+          <span className="block font-display text-lg font-bold">Recent Memory Garden</span>
+          <span className="block text-ink/75">Take a quiet look at your garden.</span>
+          <span className="mt-1 block font-semibold text-garden-900">Open Garden</span>
+        </span>
+        <ChevronRight size={24} aria-hidden />
+      </Link>
 
       <h2 className="text-xl mt-8 mb-3">Comfort settings</h2>
       <div className="card p-4 space-y-4">

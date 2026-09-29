@@ -42,10 +42,37 @@ export class RuleBasedBrain implements AssistantBrain {
       return `That is a good question for your doctor or carer. ${SAFETY_NOTE} I can help you practise gently, or we can look at your photos together.`
     }
 
+    const faceClue = input.match(/please give a gentle clue for familiar faces:\s*(.+)/i)
+    if (faceClue) return `Here's a gentle clue: ${faceClue[1]}`
+    if (/please suggest a gentle easier version for familiar faces/i.test(t)) return `Let's look at one familiar person at a time, ${name}. A caregiver can help name the person together with you.`
+    if (/please simplify this visual pattern/i.test(t)) return `Let's make it simpler: notice two items repeating, then choose what comes next.`
+    if (/please reduce the choices in this categorization activity/i.test(t)) return `Let's look at just a couple of items. Notice which ones seem alike, then choose the one that feels different.`
+    const patternClue = input.match(/please explain this repeating pattern gently:\s*(.+)/i)
+    if (patternClue) return `Look for the items that repeat. ${patternClue[1]}`
+    const categoryClue = input.match(/please explain the category gently:\s*(.+)/i)
+    if (categoryClue) return `Notice how the familiar items are alike. ${categoryClue[1]}`
+    if (/offer a shorter sequence/.test(t)) return `Of course. Let's use just two familiar items and build their order together. There is no rush.`
+
+    if (/clue|hint/.test(t)) {
+      const memory = memories.find((item) => item.story.trim())
+      return memory
+        ? `Let's look at one of your memories together: ${memory.name}. ${memory.story}`
+        : `There is no rush, ${name}. We can ask your caregiver to add a memory to explore together.`
+    }
+    if (/easier/.test(t)) {
+      const memory = memories.find((item) => item.story.trim())
+      return memory
+        ? `We can keep it simple, ${name}. Would you like to talk about ${memory.name}? ${memory.story}`
+        : `We can take this gently, ${name}. Would you like to rest or look at a photo with your caregiver?`
+    }
+    if (/gentle break|need a break|take a break/.test(t)) {
+      return `Of course, ${name}. There is no rush. Let's pause together; the garden will be here when you are ready.`
+    }
+
     // 3. Navigation / feature help
     if (/game|play|practice|exercise/.test(t)) return `Let's play something gentle. Tap "Games" at the bottom, and pick whichever feels right today.`
     if (/photo|memor|family|picture/.test(t)) return `Your memories are kept safe in "Your Memories". We will use them in games so they feel personal to you.`
-    if (/garden|flower/.test(t)) return `Your Memory Garden grows a little each time you enjoy an activity. There is no way to do it wrong.`
+    if (/garden|flower/.test(t)) return `Your Memory Garden responds to how a moment felt. There is no right or wrong way to spend time there.`
     if (/break|tired|rest|calm|relax/.test(t)) return `Of course. Let's take a slow breath together. In through the nose... and out. The garden will be here when you are ready.`
     if (/hello|hi\b|hey|good (morning|afternoon|evening)/.test(t)) return `Hello ${name}. I'm Mo. It is lovely to hear from you. How would you like to spend a little time today?`
     if (/thank/.test(t)) return `You are very welcome, ${name}.`

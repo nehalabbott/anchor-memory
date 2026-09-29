@@ -80,7 +80,7 @@ export interface ChatMessage {
 export type InteractionState = 'normal' | 'needs_help' | 'confusion' | 'possible_frustration' | 'high_frustration'
 
 /** Activity identifiers are stable across UI changes and suitable for Part 3 event records. */
-export type ActivityId = 'faces' | 'match' | 'story' | 'sequence'
+export type ActivityId = 'faces' | 'pattern' | 'sequence' | 'category'
 
 /** Non-judgmental activity lifecycle and interaction signals for Part 2 and Part 3. */
 export type Part2InteractionEvent =
@@ -89,7 +89,7 @@ export type Part2InteractionEvent =
   | { type: 'activity_resumed'; at: number; sessionId: string; activityId: ActivityId }
   | { type: 'activity_ended'; at: number; sessionId: string; activityId: ActivityId; reason: 'finished' | 'left' | 'break' }
   | { type: 'memory_presented'; at: number; sessionId: string; activityId: ActivityId; memoryId: string }
-  | { type: 'response_submitted'; at: number; sessionId: string; activityId: ActivityId; promptId: string }
+  | { type: 'response_submitted'; at: number; sessionId: string; activityId: ActivityId; promptId: string; responseId: string }
 
 /** Garden presentation is qualitative and never represents failure or performance. */
 export interface GardenState {

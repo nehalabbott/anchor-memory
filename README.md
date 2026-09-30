@@ -61,8 +61,3 @@ Caregiver memory profile (upload photo, name, relationship, story, voice), the f
 **Part 3 — Adaptive loop**
 Interaction logging, frustration/confusion state estimation (the five states from the Lab 4 report), Whisper transcription and LLM replies via `server/`, adaptive responses (simplify, calming activity, break), biweekly assessment, and privacy/consent. Switch `brain` to `RemoteBrain` in `src/assistant/brain.ts`.
 
-## GitHub repo settings
-
-**About:** Personalised memory games and a gentle AI assistant for people with early-stage dementia.
-
-**Topics:** `dementia` `cognitive-training` `accessibility` `hci` `react` `typescript` `assistive-technology` `speech-recognition` `serious-games` `elderly-care`

@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 480 420" role="img" aria-label="Fictional portrait of Nisha">
+  <rect width="480" height="420" fill="#FFE1E3"/>
+  <path d="M56 420c18-94 82-142 184-142s166 48 184 142" fill="#7A3C0B"/>
+  <path d="M134 179c0-82 37-125 106-125 70 0 106 45 106 127v67H134z" fill="#242323"/>
+  <ellipse cx="240" cy="178" rx="80" ry="100" fill="#BD795D"/>
+  <path d="M158 149c11-67 39-96 88-96 48 0 81 29 96 84-27-15-53-38-70-59-31 38-68 60-114 71z" fill="#242323"/>
+  <path d="M203 178h10m54 0h10" stroke="#17313A" stroke-width="9" stroke-linecap="round"/>
+  <path d="M220 222c13 9 27 9 40 0" fill="none" stroke="#763E36" stroke-width="7" stroke-linecap="round"/>
+  <path d="M215 276v-35m50 35v-35" stroke="#BD795D" stroke-width="14"/>
+</svg>

@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 480 420" role="img" aria-label="Fictional portrait of Anita">
+  <rect width="480" height="420" fill="#DDF0FD"/>
+  <path d="M60 420c12-92 72-143 180-143s168 51 180 143" fill="#0B6B5C"/>
+  <path d="M137 186c-5-75 28-124 104-124 69 0 103 48 102 124l-9 77H147z" fill="#49352D"/>
+  <ellipse cx="240" cy="176" rx="81" ry="101" fill="#C98260"/>
+  <path d="M158 157c8-67 35-98 86-98 51 0 84 29 98 89-27-25-52-39-86-42-34 26-62 38-98 51z" fill="#49352D"/>
+  <path d="M204 175h9m53 0h9" stroke="#17313A" stroke-width="9" stroke-linecap="round"/>
+  <path d="M220 220c13 10 27 10 40 0" fill="none" stroke="#7D3E39" stroke-width="7" stroke-linecap="round"/>
+  <path d="M214 276v-34m52 34v-34" stroke="#C98260" stroke-width="14"/>
+</svg>

@@ -1,0 +1,78 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  html, body, #root { height: 100%; }
+  body {
+    @apply bg-mist text-ink font-body text-base antialiased;
+    margin: 0;
+  }
+  body[data-theme='calming-pastels'] {
+    --theme-bg: #f6f1f7;
+    --theme-panel: #fffdfd;
+    --theme-text: #23414a;
+    --theme-accent: #0f9e7f;
+    --theme-soft: #e9f5f3;
+  }
+  body[data-theme='warm-vintage'] {
+    --theme-bg: #f6efe7;
+    --theme-panel: #fffaf2;
+    --theme-text: #3a2b2b;
+    --theme-accent: #9f5f2d;
+    --theme-soft: #f8ebdc;
+  }
+  body[data-theme='high-contrast'] {
+    --theme-bg: #f8fafc;
+    --theme-panel: #ffffff;
+    --theme-text: #0f172a;
+    --theme-accent: #0b8a70;
+    --theme-soft: #edf5f3;
+  }
+  body {
+    background: var(--theme-bg, #EAF4F4);
+    color: var(--theme-text, #17313A);
+  }
+  .theme-panel { background: var(--theme-panel, #fff); }
+  .theme-accent { color: var(--theme-accent, #0B8A70); }
+  h1, h2, h3 { @apply font-display font-bold text-ink; }
+  /* Visible keyboard focus everywhere (accessibility) */
+  :focus-visible { outline: 3px solid #7C3AED; outline-offset: 3px; border-radius: 12px; }
+  @media (prefers-reduced-motion: reduce) {
+    * { animation-duration: .01ms !important; transition-duration: .01ms !important; }
+  }
+}
+
+@layer components {
+  /* Every tappable target is at least 56px tall (HCI goal: large buttons) */
+  .btn { @apply inline-flex items-center justify-center gap-3 min-h-[56px] px-6 rounded-pill font-display font-semibold text-lg transition active:scale-[.98]; }
+  .btn-primary { @apply btn bg-garden-600 text-white hover:bg-garden-700; }
+  .btn-soft { @apply btn bg-white text-garden-700 border-2 border-mint-200 hover:bg-mint-100; }
+  .card { @apply bg-white rounded-card shadow-soft border border-mint-200; }
+  .tile { @apply rounded-card border-2 p-4 text-left min-h-[120px] flex flex-col justify-between transition active:scale-[.98]; }
+  .garden-scene { @apply relative isolate h-[300px] overflow-hidden; background: linear-gradient(#BFE6F3 0%, #E8F4D5 68%, #8EB887 100%); }
+  .garden-calming { background: linear-gradient(#DCECF1 0%, #E4ECE7 70%, #88A89B 100%); }
+  .garden-sun { @apply absolute right-8 top-6 flex h-14 w-14 items-center justify-center rounded-full bg-sun-soft text-4xl text-sun-main; }
+  .garden-sun-soft { opacity: .68; }
+  .garden-sun-bright { box-shadow: 0 0 0 12px rgba(251,247,195,.35), 0 0 34px rgba(217,119,6,.25); }
+  .garden-river { @apply absolute bottom-0 left-0 right-0 h-12; background: #5DB8C9; clip-path: polygon(0 35%, 20% 20%, 44% 38%, 65% 18%, 100% 35%, 100% 100%, 0 100%); opacity: .55; }
+  .garden-river-noticeable { @apply h-20; opacity: .9; animation: river-breathe 8s ease-in-out infinite; }
+  .garden-calming .garden-river-noticeable { animation-duration: 16s; }
+  .garden-blooms { @apply absolute bottom-9 left-0 right-0 flex items-end justify-around px-2 text-4xl; }
+  .garden-flower { filter: drop-shadow(0 2px 1px rgba(23,49,58,.2)); }
+  .garden-flower-lively { animation: bloom-sway 5s ease-in-out infinite alternate; }
+  .garden-grass { @apply absolute bottom-0 w-full text-center text-2xl; }
+  .garden-butterfly { @apply absolute z-10 text-3xl; }
+  .garden-butterfly-one { left: 20%; top: 32%; animation: butterfly-drift 10s ease-in-out infinite alternate; }
+  .garden-butterfly-two { right: 23%; top: 48%; animation: butterfly-drift 13s ease-in-out -4s infinite alternate-reverse; }
+  .garden-rain { @apply absolute inset-0 z-10 flex justify-around overflow-hidden; }
+  .garden-rain span { width: 2px; height: 18px; background: rgba(77,137,158,.48); animation: gentle-rain 3s linear infinite; }
+  .garden-rain span:nth-child(2n) { animation-delay: -1.2s; }
+  .garden-calming .garden-rain span { animation-duration: 7s; }
+}
+
+@keyframes bloom-sway { from { transform: translateY(0) rotate(-4deg); } to { transform: translateY(-5px) rotate(4deg); } }
+@keyframes butterfly-drift { from { transform: translate(0, 0); } to { transform: translate(20px, -12px); } }
+@keyframes gentle-rain { from { transform: translateY(-22px); opacity: .25; } to { transform: translateY(320px); opacity: .7; } }
+@keyframes river-breathe { 50% { transform: translateY(-3px); } }
+@keyframes koi-tail { from { transform: rotate(-14deg); } to { transform: rotate(14deg); } }

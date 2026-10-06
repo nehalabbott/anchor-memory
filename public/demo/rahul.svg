@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 480 420" role="img" aria-label="Fictional portrait of Rahul">
+  <rect width="480" height="420" fill="#FBF7C3"/>
+  <path d="M54 420c18-95 80-145 186-145s168 50 186 145" fill="#075985"/>
+  <path d="M146 158c3-62 38-96 95-96 59 0 95 36 96 101v67H143z" fill="#302820"/>
+  <ellipse cx="240" cy="177" rx="78" ry="98" fill="#A9684A"/>
+  <path d="M163 140c15-56 43-82 82-82 49 0 78 26 91 77-30-11-53-21-75-41-29 27-60 43-98 46z" fill="#302820"/>
+  <path d="M204 177h9m53 0h9" stroke="#17313A" stroke-width="9" stroke-linecap="round"/>
+  <path d="M219 220c14 9 28 9 42 0" fill="none" stroke="#542D27" stroke-width="7" stroke-linecap="round"/>
+  <path d="M216 274v-32m48 32v-32" stroke="#A9684A" stroke-width="14"/>
+</svg>

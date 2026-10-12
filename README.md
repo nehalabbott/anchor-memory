@@ -1,4 +1,8 @@
 # Anchor
+To do: (Tasks left)
+1. add sound in memory aquarium
+2. add personalization (stuff the person likes in games and all)
+3. frustration detection (vocal/visual/screen)
 
 > Personalised memory games and a gentle AI assistant for older adults with early-stage dementia.
 

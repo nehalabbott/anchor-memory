@@ -1,8 +1,20 @@
 import { Link } from 'react-router-dom'
 import { UserRound, Shapes, ListOrdered, ScanSearch } from 'lucide-react'
 import PageHeader from '@/components/PageHeader'
+import { useApp } from '@/store/useApp'
 
 import { Brain, Route, Sparkles } from 'lucide-react'
+
+const COLOR_MAP = {
+  Blue: '#4F9AE8',
+  Green: '#1E9A7A',
+  Yellow: '#D8A93D',
+  Pink: '#D77BA5',
+  Purple: '#8C6AD8',
+  Orange: '#D97A45',
+  Red: '#D96161',
+  White: '#F8F8F8',
+} as const
 
 const GAMES = [
   { id: 'faces',    title: 'Familiar Faces',         sub: 'Recognize familiar people', icon: UserRound, cls: 'bg-mint-100 border-garden-500 text-garden-900' },
@@ -15,15 +27,23 @@ const GAMES = [
 ]
 
 export default function Games() {
+  const accentColor = useApp((s) => s.preferences.favoriteColors[0])
+  const accent = accentColor && accentColor in COLOR_MAP ? COLOR_MAP[accentColor as keyof typeof COLOR_MAP] : '#0B8A70'
+
   return (
     <>
       <PageHeader title="Choose an Activity" subtitle="Pick something that feels right today" />
       <div className="grid grid-cols-2 gap-4">
         {GAMES.map(({ id, title, sub, icon: Icon, cls }) => (
-          <Link key={id} to={`/games/${id}`} className={`tile ${cls}`}>
-            <span className="w-12 h-12 rounded-full bg-white flex items-center justify-center" aria-hidden><Icon size={26} /></span>
+          <Link
+            key={id}
+            to={`/games/${id}`}
+            className={`tile ${cls}`}
+            style={{ borderColor: accent, background: `${accent}18` }}
+          >
+            <span className="w-12 h-12 rounded-full bg-white flex items-center justify-center" aria-hidden style={{ color: accent, border: `2px solid ${accent}` }}><Icon size={26} /></span>
             <span className="mt-3">
-              <span className="block font-display font-bold text-lg leading-tight">{title}</span>
+              <span className="block font-display font-bold text-lg leading-tight" style={{ color: accent }}>{title}</span>
               <span className="block text-base opacity-80">{sub}</span>
             </span>
           </Link>

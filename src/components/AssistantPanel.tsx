@@ -61,6 +61,8 @@ export default function AssistantPanel() {
     setNotice('Mic Off / Private. Turn off Privacy Shield before using voice input.')
   }, [privacyShieldEnabled])
 
+  const visibleChat = chat.slice(-4)
+
   useEffect(() => { endRef.current?.scrollIntoView({ behavior: 'smooth' }) }, [chat, thinking])
 
   // Escape closes the sheet
@@ -140,7 +142,7 @@ export default function AssistantPanel() {
 
         {/* Conversation */}
         <div className="flex-1 overflow-y-auto px-4 py-4 space-y-3" aria-live="polite">
-          {chat.map((m) => (
+          {visibleChat.map((m) => (
             <div key={m.id} className={m.role === 'user' ? 'flex justify-end' : 'flex justify-start'}>
               <div className={`max-w-[85%] rounded-card px-4 py-3 text-lg leading-snug shadow-soft ${
                 m.role === 'user' ? 'bg-garden-600 text-white rounded-br-md' : 'bg-white text-ink border border-mint-200 rounded-bl-md'}`}>
@@ -149,8 +151,9 @@ export default function AssistantPanel() {
               </div>
             </div>
           ))}
+          {chat.length > visibleChat.length && <p className="text-xs text-ink/60 px-2">Earlier messages are hidden.</p>}
           {thinking && <div className="text-ink/60 px-2">Mo is thinking…</div>}
-          {chat.length <= 1 && !thinking && (
+          {visibleChat.length <= 1 && !thinking && (
             <div className="pt-2">
               <p className="text-sm text-ink/70 mb-2">You could say</p>
               <div className="flex flex-wrap gap-2">

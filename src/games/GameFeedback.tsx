@@ -1,5 +1,17 @@
 import { useEffect, useRef, useState, type ReactNode } from 'react'
 import { AlertCircle, CheckCircle2, Volume2 } from 'lucide-react'
+import { useApp } from '@/store/useApp'
+
+const COLOR_MAP = {
+  Blue: '#4F9AE8',
+  Green: '#1E9A7A',
+  Yellow: '#D8A93D',
+  Pink: '#D77BA5',
+  Purple: '#8C6AD8',
+  Orange: '#D97A45',
+  Red: '#D96161',
+  White: '#F8F8F8',
+} as const
 
 /**
  * Shown before a game starts. Gives a short, plain-language "how to play" demo with an
@@ -25,6 +37,8 @@ export function HowToPlayCard({
 }) {
   const [reading, setReading] = useState(false)
   const utteranceRef = useRef<SpeechSynthesisUtterance | null>(null)
+  const accentColor = useApp((s) => s.preferences.favoriteColors[0])
+  const accent = accentColor && accentColor in COLOR_MAP ? COLOR_MAP[accentColor as keyof typeof COLOR_MAP] : '#0B8A70'
 
   useEffect(() => () => {
     if (typeof window !== 'undefined' && 'speechSynthesis' in window) window.speechSynthesis.cancel()
@@ -50,7 +64,7 @@ export function HowToPlayCard({
     <section className="card p-5" aria-label={`How to play ${title}`}>
       <h2 className="text-2xl font-display">{title}</h2>
       <p className="mt-1 text-ink/70">{description}</p>
-      <div className="mt-4 rounded-2xl border-2 border-mint-200 bg-mint-50 p-4">
+      <div className="mt-4 rounded-2xl border-2 p-4" style={{ borderColor: accent, background: `${accent}18` }}>
         <p className="text-lg font-semibold text-garden-900">How to play</p>
         <p className="mt-2 text-lg leading-relaxed text-ink/85">{instructions}</p>
         {exampleVisual && <div className="mt-3">{exampleVisual}</div>}
@@ -70,7 +84,7 @@ export function HowToPlayCard({
           <Volume2 size={20} aria-hidden />
           {reading ? 'Stop reading' : 'Hear the instructions'}
         </button>
-        <button type="button" onClick={onStart} className="btn-primary w-full">
+        <button type="button" onClick={onStart} className="btn-primary w-full" style={{ background: accent, borderColor: accent }}>
           {startLabel}
         </button>
       </div>
@@ -104,8 +118,8 @@ export function FeedbackPopup({
     <div
       role="alert"
       aria-live="assertive"
-      className={`sticky top-2 z-30 mx-auto mt-4 max-w-md rounded-2xl border-2 p-4 shadow-lg ${
-        isCorrect ? 'border-garden-600 bg-mint-100 text-garden-900' : 'border-rose-main bg-rose-soft text-rose-deep'
+      className={`sticky top-0 z-40 mx-auto mt-2 w-full max-w-md rounded-2xl border-2 p-4 shadow-lg ${
+        isCorrect ? 'feedback-correct' : 'feedback-wrong'
       }`}
     >
       <div className="flex items-start gap-3">
@@ -117,7 +131,7 @@ export function FeedbackPopup({
       </div>
       <div className="mt-3 flex gap-2">
         {!isCorrect && onRetry && (
-          <button type="button" onClick={onRetry} className="min-h-[52px] flex-1 rounded-xl bg-white font-semibold text-rose-deep border-2 border-rose-main">
+          <button type="button" onClick={onRetry} className="min-h-[52px] flex-1 rounded-xl border-2 border-red-500 bg-white font-semibold text-red-700">
             Try again
           </button>
         )}
@@ -133,8 +147,8 @@ export function FeedbackPopup({
 
 /** Classnames to mark a choice button as wrong (clearly different color) or correct. */
 export function choiceStateClass(state: 'default' | 'wrong' | 'correct' | 'selected'): string {
-  if (state === 'wrong') return 'border-rose-main bg-rose-soft text-rose-deep'
-  if (state === 'correct') return 'border-garden-700 bg-mint-100 text-garden-900'
-  if (state === 'selected') return 'border-sky-deep bg-sky-soft text-sky-deep'
-  return 'border-garden-600 bg-white text-garden-900'
+  if (state === 'wrong') return 'choice-wrong'
+  if (state === 'correct') return 'choice-correct'
+  if (state === 'selected') return 'choice-selected'
+  return 'choice-default'
 }

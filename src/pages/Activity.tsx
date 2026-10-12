@@ -117,6 +117,49 @@ const TOKEN_STYLE = {
   everyday: 'border-iris-main bg-iris-soft text-iris-deep',
 }
 
+const COLOR_MAP = {
+  Blue: '#4F9AE8',
+  Green: '#1E9A7A',
+  Yellow: '#D8A93D',
+  Pink: '#D77BA5',
+  Purple: '#8C6AD8',
+  Orange: '#D97A45',
+  Red: '#D96161',
+  White: '#F8F8F8',
+} as const
+
+function hexToRgb(hex: string) {
+  const normalized = hex.replace('#', '')
+  const short = normalized.length === 3 ? normalized.split('').map((part) => part + part).join('') : normalized
+  const numeric = Number.parseInt(short, 16)
+  return {
+    r: (numeric >> 16) & 255,
+    g: (numeric >> 8) & 255,
+    b: numeric & 255,
+  }
+}
+
+function mixHexColors(first: string, second: string, weight = 0.5) {
+  const a = hexToRgb(first)
+  const b = hexToRgb(second)
+  const mix = (channelA: number, channelB: number) => Math.round(channelA + (channelB - channelA) * weight)
+  return `rgb(${mix(a.r, b.r)}, ${mix(a.g, b.g)}, ${mix(a.b, b.b)})`
+}
+
+function getFavoriteColorPalette(colors: string[]) {
+  const selected = colors
+    .map((color) => color && color in COLOR_MAP ? COLOR_MAP[color as keyof typeof COLOR_MAP] : null)
+    .filter((color): color is Exclude<(typeof COLOR_MAP)[keyof typeof COLOR_MAP], null> => Boolean(color))
+
+  const primary = selected[0] ?? '#0B8A70'
+  const secondary = selected[1] ?? primary
+  return {
+    primary,
+    secondary,
+    blended: mixHexColors(primary, secondary, 0.5),
+  }
+}
+
 export default function ActivityRoute() {
   const { game } = useParams()
   if (!game || !GAME_IDS.includes(game as keyof typeof ROUTE_ACTIVITY)) return <UnknownActivity />
@@ -130,6 +173,8 @@ export default function ActivityRoute() {
 function Activity({ activityId }: { activityId: ActivityId }) {
   const navigate = useNavigate()
   const { memories, logEvent, recordSessionExperience, requestAssistantAction } = useApp()
+  const accentColor = useApp((s) => s.preferences.favoriteColors[0])
+  const accent = accentColor && accentColor in COLOR_MAP ? COLOR_MAP[accentColor as keyof typeof COLOR_MAP] : '#0B8A70'
   const [session] = useState(() => createActivitySession(activityId))
   const [started, setStarted] = useState(false)
   const [paused, setPaused] = useState(false)
@@ -410,9 +455,9 @@ function Activity({ activityId }: { activityId: ActivityId }) {
     <section className="mt-4" aria-label="Ask Mo for help">
       <h2 className="text-lg">Mo can help</h2>
       <div className="mt-2 grid grid-cols-3 gap-2">
-        <button type="button" onClick={() => askMo('clue')} className="min-h-[60px] rounded-xl border-2 border-garden-500 bg-mint-100 px-2 font-semibold text-garden-900">Need a clue?</button>
-        <button type="button" onClick={() => askMo('easier')} className="min-h-[60px] rounded-xl border-2 border-rose-main bg-rose-soft px-2 font-semibold text-rose-deep">Easier version</button>
-        <button type="button" onClick={() => askMo('break')} className="min-h-[60px] rounded-xl border-2 border-sky-deep bg-sky-soft px-2 font-semibold text-sky-deep">I'm taking a break</button>
+        <button type="button" onClick={() => askMo('clue')} className="min-h-[60px] rounded-xl border-2 px-2 font-semibold" style={{ borderColor: accent, background: `${accent}18`, color: accent }}>Need a clue?</button>
+        <button type="button" onClick={() => askMo('easier')} className="min-h-[60px] rounded-xl border-2 px-2 font-semibold" style={{ borderColor: accent, background: `${accent}18`, color: accent }}>Easier version</button>
+        <button type="button" onClick={() => askMo('break')} className="min-h-[60px] rounded-xl border-2 px-2 font-semibold" style={{ borderColor: accent, background: `${accent}18`, color: accent }}>I'm taking a break</button>
       </div>
     </section>
   )
@@ -443,8 +488,8 @@ function Activity({ activityId }: { activityId: ActivityId }) {
         <section className="card p-5" aria-labelledby="experience-heading">
           <h2 id="experience-heading" className="text-2xl">How did that feel?</h2>
           <p className="mt-2 text-ink/75">Choose what feels right. This helps the garden respond; it is not a test.</p>
-          <button type="button" onClick={() => chooseExperience('flourishing')} className="mt-5 min-h-[68px] w-full rounded-2xl border-2 border-garden-600 bg-mint-100 px-4 text-left text-lg font-semibold text-garden-900">That felt comfortable</button>
-          <button type="button" onClick={() => chooseExperience('calming')} className="mt-3 min-h-[68px] w-full rounded-2xl border-2 border-sky-deep bg-sky-soft px-4 text-left text-lg font-semibold text-sky-deep">I'd like a quiet moment</button>
+          <button type="button" onClick={() => chooseExperience('flourishing')} className="mt-5 min-h-[68px] w-full rounded-2xl border-2 px-4 text-left text-lg font-semibold" style={{ borderColor: accent, background: `${accent}18`, color: accent }}>That felt comfortable</button>
+          <button type="button" onClick={() => chooseExperience('calming')} className="mt-3 min-h-[68px] w-full rounded-2xl border-2 px-4 text-left text-lg font-semibold" style={{ borderColor: accent, background: `${accent}18`, color: accent }}>I'd like a quiet moment</button>
         </section>
       ) : paused ? (
         <>
@@ -461,7 +506,7 @@ function Activity({ activityId }: { activityId: ActivityId }) {
           <section className="card p-4" aria-live="polite" onPointerDownCapture={trackTap}>
             <div className="flex items-center justify-between gap-3">
               <p className="font-semibold text-garden-900">Take your time</p>
-              <button type="button" onClick={pause} className="min-h-[48px] rounded-xl border-2 border-mint-200 bg-white px-3 font-semibold flex items-center gap-2"><Pause size={19} /> Pause</button>
+              <button type="button" onClick={pause} className="min-h-[48px] rounded-xl border-2 bg-white px-3 font-semibold flex items-center gap-2" style={{ borderColor: accent, color: accent }}><Pause size={19} /> Pause</button>
             </div>
             {activityId === 'faces' && face && <FacesActivity prompt={face} choices={faceChoices} targetScale={difficulty.targetScale} hintsEnabled={difficulty.hintsEnabled} answered={answered} status={status} selectedChoiceId={selectedChoiceId} correctChoiceId={face.memory.id} feedback={feedback} hint={hint} onChoose={chooseFace} onRetry={retryRound} onContinue={finishRound} />}
             {activityId === 'pattern' && pattern && <PatternActivity round={pattern} choices={patternChoices} simpler={simplerMode} targetScale={difficulty.targetScale} answered={answered} status={status} selectedChoiceId={selectedChoiceId} correctChoiceId={pattern.answer.id} feedback={feedback} hint={hint} onChoose={choosePattern} onRetry={retryRound} onContinue={finishRound} />}
@@ -493,6 +538,7 @@ function FacesActivity({ prompt, choices, targetScale, hintsEnabled, answered, s
 }) {
   return (
     <div className="mt-4">
+      <FeedbackPopup status={status} message={feedback} hint={hint ?? undefined} onRetry={onRetry} onContinue={onContinue} />
       <div className="mx-auto flex min-h-[220px] max-w-[320px] items-center justify-center overflow-hidden rounded-2xl border-2 border-mint-200 bg-mist">
         {prompt.memory.photo
           ? <MemoryPhoto reference={prompt.memory.photo} alt={prompt.memory.photo.altText ?? `Portrait from a memory`} className="h-[260px] w-full object-cover" />
@@ -508,7 +554,6 @@ function FacesActivity({ prompt, choices, targetScale, hintsEnabled, answered, s
           return <button key={choice.id} type="button" disabled={answered} onClick={() => onChoose(choice.id)} style={{ minHeight: `${64 * targetScale}px` }} className={`rounded-2xl border-2 px-4 text-lg font-semibold disabled:opacity-80 ${stateClass}`}>{choice.name}{choice.relationship ? `, ${choice.relationship}` : ''}</button>
         })}
       </div>
-      <FeedbackPopup status={status} message={feedback} hint={hint ?? undefined} onRetry={onRetry} onContinue={onContinue} />
     </div>
   )
 }
@@ -530,6 +575,7 @@ function PatternActivity({ round, choices, simpler, targetScale, answered, statu
 }) {
   return (
     <div className="mt-4">
+      <FeedbackPopup status={status} message={feedback} hint={hint ?? undefined} onRetry={onRetry} onContinue={onContinue} />
       <p className="text-lg">{round.instruction}</p>
       <div className="mt-4 flex flex-wrap items-center justify-center gap-2" aria-label="Repeating pattern">
         {round.pattern.map((token, index) => <TokenTile key={`${round.id}-pattern-${index}`} token={token} scale={targetScale} />)}
@@ -544,7 +590,6 @@ function PatternActivity({ round, choices, simpler, targetScale, answered, statu
           return <TokenButton key={token.id} token={token} scale={targetScale} state={state} disabled={answered} onClick={() => onChoose(token.id)} />
         })}
       </div>
-      <FeedbackPopup status={status} message={feedback} hint={hint ?? undefined} onRetry={onRetry} onContinue={onContinue} />
     </div>
   )
 }
@@ -568,16 +613,19 @@ function SequenceActivity({ instruction, target, choices, simpler, targetScale, 
   onRetry: () => void
   onContinue: () => void
 }) {
+  const preferred = useApp((s) => s.preferences.favoriteColors)
+  const palette = getFavoriteColorPalette(preferred)
   const selectedTokens = selection.map((id) => choices.find((token) => token.id === id)).filter((token): token is GameToken => Boolean(token))
   return (
     <div className="mt-4">
+      <FeedbackPopup status={status} message={feedback} hint={hint ?? undefined} onRetry={onRetry} onContinue={onContinue} />
       <p className="text-lg">{simpler ? 'Try a shorter sequence.' : instruction}</p>
       {visible ? (
         <>
           <div className="mt-4 flex flex-wrap justify-center gap-2 rounded-2xl bg-sun-soft p-4" aria-label="Sequence to remember">
             {target.map((token) => <TokenTile key={token.id} token={token} scale={targetScale} />)}
           </div>
-          <button type="button" onClick={onHide} className="btn-primary mt-4 w-full">Hide sequence and begin</button>
+          <button type="button" onClick={onHide} className="mt-4 w-full rounded-2xl border-2 font-semibold" style={{ borderColor: palette.primary, background: `linear-gradient(135deg, ${palette.primary}22, ${palette.secondary}18)`, color: palette.primary }}>Hide sequence and begin</button>
         </>
       ) : (
         <>
@@ -590,10 +638,9 @@ function SequenceActivity({ instruction, target, choices, simpler, targetScale, 
           </div>
           {!answered && <div className="mt-4 grid grid-cols-2 gap-3">{choices.map((token) => <TokenButton key={token.id} token={token} scale={targetScale} disabled={selection.includes(token.id) || selection.length >= target.length} onClick={() => onChoose(token.id)} />)}</div>}
           {!answered && <div className="mt-3 grid grid-cols-2 gap-3">
-            <button type="button" disabled={!selection.length} onClick={onUndo} className="btn-soft w-full"><RotateCcw size={20} /> Remove last</button>
-            <button type="button" disabled={selection.length !== target.length} onClick={onCheck} className="btn-primary w-full">Check sequence</button>
+            <button type="button" disabled={!selection.length} onClick={onUndo} className="w-full rounded-2xl border-2 font-semibold" style={{ borderColor: palette.primary, background: `linear-gradient(135deg, ${palette.primary}10, ${palette.secondary}10)`, color: palette.primary }}><RotateCcw size={20} /> Remove last</button>
+            <button type="button" disabled={selection.length !== target.length} onClick={onCheck} className="w-full rounded-2xl border-2 font-semibold" style={{ borderColor: palette.primary, background: `linear-gradient(135deg, ${palette.primary}, ${palette.secondary})`, color: '#fff' }}>Check sequence</button>
           </div>}
-          <FeedbackPopup status={status} message={feedback} hint={hint ?? undefined} onRetry={onRetry} onContinue={onContinue} />
         </>
       )}
     </div>
@@ -617,6 +664,7 @@ function CategoryActivity({ round, choices, simpler, targetScale, answered, stat
 }) {
   return (
     <div className="mt-4">
+      <FeedbackPopup status={status} message={feedback} hint={hint ?? undefined} onRetry={onRetry} onContinue={onContinue} />
       <p className="text-lg">{round.instruction}</p>
       {simpler && <p className="mt-3 rounded-xl bg-sun-soft p-3 text-sun-deep">Notice how some items are alike. Choose the one that seems different.</p>}
       <div className="mt-4 grid grid-cols-2 gap-3">
@@ -627,21 +675,25 @@ function CategoryActivity({ round, choices, simpler, targetScale, answered, stat
           return <TokenButton key={token.id} token={token} scale={targetScale} state={state} disabled={answered} onClick={() => onChoose(token.id)} />
         })}
       </div>
-      <FeedbackPopup status={status} message={feedback} hint={hint ?? undefined} onRetry={onRetry} onContinue={onContinue} />
     </div>
   )
 }
 
 function TokenButton({ token, scale = 1, disabled, state = 'default', onClick }: { token: GameToken; scale?: number; disabled?: boolean; state?: 'default' | 'wrong' | 'correct'; onClick: () => void }) {
+  const preferred = useApp((s) => s.preferences.favoriteColors)
+  const palette = getFavoriteColorPalette(preferred)
   const stateClass = state === 'wrong' ? choiceStateClass('wrong') : state === 'correct' ? choiceStateClass('correct') : choiceStateClass('default')
-  return <button type="button" disabled={disabled} onClick={onClick} style={{ minHeight: `${92 * scale}px` }} className={`rounded-2xl border-2 px-3 py-2 text-center font-semibold disabled:opacity-75 ${stateClass}`}>
+  const buttonStyle = state === 'default' ? { minHeight: `${92 * scale}px`, borderColor: palette.primary, background: `linear-gradient(135deg, ${palette.primary}18, ${palette.secondary}12)`, color: palette.primary } : undefined
+  return <button type="button" disabled={disabled} onClick={onClick} style={buttonStyle} className={`rounded-2xl border-2 px-3 py-2 text-center font-semibold disabled:opacity-75 ${stateClass}`}>
     <TokenIcon glyph={token.glyph} />
     <span className="mt-1 block">{token.label}</span>
   </button>
 }
 
 function TokenTile({ token, scale = 1 }: { token: GameToken; scale?: number }) {
-  return <div style={{ minHeight: `${80 * scale}px`, minWidth: `${80 * scale}px` }} className={`flex flex-col items-center justify-center rounded-2xl border-2 px-2 py-2 font-semibold ${TOKEN_STYLE[token.category]}`}>
+  const preferred = useApp((s) => s.preferences.favoriteColors)
+  const palette = getFavoriteColorPalette(preferred)
+  return <div style={{ minHeight: `${80 * scale}px`, minWidth: `${80 * scale}px`, borderColor: palette.primary, background: `linear-gradient(135deg, ${palette.primary}18, ${palette.secondary}10)`, color: palette.primary }} className="flex flex-col items-center justify-center rounded-2xl border-2 px-2 py-2 font-semibold">
     <TokenIcon glyph={token.glyph} />
     <span className="mt-1 max-w-28 text-center text-sm leading-tight">{token.label}</span>
   </div>

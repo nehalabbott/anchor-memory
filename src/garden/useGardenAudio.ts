@@ -11,104 +11,105 @@ interface UseGardenAudioOptions {
 export function useGardenAudio({ mood, enabled, reducedMotion = false }: UseGardenAudioOptions) {
   const [audioReady, setAudioReady] = useState(false)
   const contextRef = useRef<AudioContext | null>(null)
-  const gainRef = useRef<GainNode | null>(null)
-  const oscillatorsRef = useRef<Array<OscillatorNode>>([])
-  const noiseRef = useRef<AudioBufferSourceNode | null>(null)
-  const noiseGainRef = useRef<GainNode | null>(null)
   const masterGainRef = useRef<GainNode | null>(null)
-  const initRef = useRef(false)
+  const toneOscRef = useRef<OscillatorNode | null>(null)
+  const toneGainRef = useRef<GainNode | null>(null)
+  const noiseSourceRef = useRef<AudioBufferSourceNode | null>(null)
+  const noiseFilterRef = useRef<BiquadFilterNode | null>(null)
+  const noiseGainRef = useRef<GainNode | null>(null)
 
   useEffect(() => {
-    if (!enabled || reducedMotion) {
-      setAudioReady(false)
-      if (contextRef.current) {
-        void contextRef.current.suspend().catch(() => undefined)
-      }
-      return
-    }
+    if (typeof window === 'undefined') return
 
-    if (typeof window === 'undefined' || typeof AudioContext === 'undefined') return
+    const AudioCtor = window.AudioContext ?? (window as Window & { webkitAudioContext?: typeof AudioContext }).webkitAudioContext
+    if (!AudioCtor) return
+
     if (!contextRef.current) {
-      const AudioCtor = window.AudioContext ?? (window as Window & { webkitAudioContext?: typeof AudioContext }).webkitAudioContext
-      if (!AudioCtor) return
       const context = new AudioCtor()
       const masterGain = context.createGain()
-      masterGain.gain.value = 0.03
+      masterGain.gain.value = 0
       masterGain.connect(context.destination)
 
-      const oscillatorBase = context.createOscillator()
-      oscillatorBase.type = 'sine'
-      oscillatorBase.frequency.value = mood === 'agitated' ? 139.5 : 220
-      const oscGain = context.createGain()
-      oscGain.gain.value = mood === 'agitated' ? 0.025 : 0.015
-      oscillatorBase.connect(oscGain)
-      oscGain.connect(masterGain)
-      oscillatorBase.start()
+      const toneOsc = context.createOscillator()
+      toneOsc.type = 'sine'
+      toneOsc.frequency.value = 180
 
-      const secondary = context.createOscillator()
-      secondary.type = 'triangle'
-      secondary.frequency.value = mood === 'agitated' ? 196 : 277
-      const secondaryGain = context.createGain()
-      secondaryGain.gain.value = mood === 'agitated' ? 0.012 : 0.008
-      secondary.connect(secondaryGain)
-      secondaryGain.connect(masterGain)
-      secondary.start()
+      const toneGain = context.createGain()
+      toneGain.gain.value = 0
+      toneOsc.connect(toneGain)
+      toneGain.connect(masterGain)
+      toneOsc.start()
 
-      const buffer = context.createBuffer(1, context.sampleRate * 2, context.sampleRate)
+      const buffer = context.createBuffer(1, context.sampleRate * 6, context.sampleRate)
       const data = buffer.getChannelData(0)
       for (let i = 0; i < data.length; i += 1) {
-        data[i] = (Math.random() * 2 - 1) * 0.12
+        const slow = Math.sin(i / 120) * 0.7
+        const rush = (Math.random() * 2 - 1) * 0.8
+        data[i] = (slow + rush) * 0.9
       }
+
       const noiseSource = context.createBufferSource()
       noiseSource.buffer = buffer
       noiseSource.loop = true
+
+      const noiseFilter = context.createBiquadFilter()
+      noiseFilter.type = 'lowpass'
+      noiseFilter.frequency.value = 700
+      noiseFilter.Q.value = 0.9
+
       const noiseGain = context.createGain()
-      noiseGain.gain.value = mood === 'agitated' ? 0.02 : 0.012
-      noiseSource.connect(noiseGain)
+      noiseGain.gain.value = 0
+      noiseSource.connect(noiseFilter)
+      noiseFilter.connect(noiseGain)
       noiseGain.connect(masterGain)
       noiseSource.start()
 
       contextRef.current = context
-      gainRef.current = masterGain
-      oscillatorsRef.current = [oscillatorBase, secondary]
-      noiseRef.current = noiseSource
-      noiseGainRef.current = noiseGain
       masterGainRef.current = masterGain
-      initRef.current = true
+      toneOscRef.current = toneOsc
+      toneGainRef.current = toneGain
+      noiseSourceRef.current = noiseSource
+      noiseFilterRef.current = noiseFilter
+      noiseGainRef.current = noiseGain
     }
-
-    if (!contextRef.current || !gainRef.current || !masterGainRef.current) return
 
     const context = contextRef.current
     const masterGain = masterGainRef.current
-    const targetGain = mood === 'agitated' ? 0.08 : mood === 'supportive' ? 0.045 : 0.03
-    masterGain.gain.setTargetAtTime(targetGain, context.currentTime, 0.8)
+    const toneOsc = toneOscRef.current
+    const toneGain = toneGainRef.current
+    const noiseFilter = noiseFilterRef.current
+    const noiseGain = noiseGainRef.current
 
-    oscillatorsRef.current[0].frequency.setTargetAtTime(mood === 'agitated' ? 139.5 : 220, context.currentTime, 0.8)
-    oscillatorsRef.current[1].frequency.setTargetAtTime(mood === 'agitated' ? 196 : 277, context.currentTime, 0.8)
-    if (noiseGainRef.current) {
-      noiseGainRef.current.gain.setTargetAtTime(mood === 'agitated' ? 0.03 : 0.012, context.currentTime, 1)
+    if (!context || !masterGain || !toneOsc || !toneGain || !noiseFilter || !noiseGain) return
+
+    if (!enabled || reducedMotion) {
+      masterGain.gain.setTargetAtTime(0, context.currentTime, 0.25)
+      setAudioReady(false)
+      void context.suspend().catch(() => undefined)
+      return
     }
+
+    const profiles = {
+      calm: { master: 0.45, tone: 160, toneGain: 0.15, noise: 0.22, filter: 520, filterType: 'lowpass' as BiquadFilterType },
+      supportive: { master: 0.6, tone: 220, toneGain: 0.2, noise: 0.28, filter: 820, filterType: 'lowpass' as BiquadFilterType },
+      agitated: { master: 0.75, tone: 280, toneGain: 0.26, noise: 0.38, filter: 1500, filterType: 'bandpass' as BiquadFilterType },
+    } as const
+
+    const profile = profiles[mood]
+    masterGain.gain.setTargetAtTime(profile.master, context.currentTime, 0.8)
+    toneOsc.frequency.setTargetAtTime(profile.tone, context.currentTime, 1)
+    toneGain.gain.setTargetAtTime(profile.toneGain, context.currentTime, 0.8)
+    noiseFilter.type = profile.filterType
+    noiseFilter.frequency.setTargetAtTime(profile.filter, context.currentTime, 1)
+    noiseGain.gain.setTargetAtTime(profile.noise, context.currentTime, 1)
     setAudioReady(true)
     void context.resume().catch(() => undefined)
-
-    return () => {
-      if (contextRef.current && initRef.current) {
-        Object.values({}).length
-      }
-    }
   }, [enabled, mood, reducedMotion])
 
   useEffect(() => {
     return () => {
       if (contextRef.current) {
         void contextRef.current.close().catch(() => undefined)
-        contextRef.current = null
-        gainRef.current = null
-        noiseRef.current = null
-        noiseGainRef.current = null
-        masterGainRef.current = null
-        oscillatorsRef.current = []
       }
     }
   }, [])

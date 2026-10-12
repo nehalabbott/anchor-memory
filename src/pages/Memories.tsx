@@ -1,4 +1,5 @@
 import { useState, type FormEvent } from 'react'
+import { Link } from 'react-router-dom'
 import { Camera, Mic, Pencil, Plus, Trash2 } from 'lucide-react'
 import PageHeader from '@/components/PageHeader'
 import { MemoryAudio, MemoryPhoto } from '@/components/MemoryMedia'
@@ -39,8 +40,28 @@ function draftFrom(memory?: MemoryItem): MemoryDraft {
   }
 }
 
+const kindFieldMap: Partial<Record<MemoryKind, (keyof MemoryDraft)[]>> = {
+  person: ['activities'],
+  story: ['story', 'people', 'places', 'activities', 'objects'],
+  place: ['story', 'people', 'activities', 'objects'],
+  activity: ['story', 'people', 'places', 'objects'],
+  object: ['story', 'people', 'places', 'activities'],
+  event: ['story', 'people', 'places'],
+  sequence: ['story', 'events'],
+}
+
+const kindTitleMap: Record<MemoryKind, string> = {
+  person: 'Person',
+  story: 'Story',
+  place: 'Place',
+  activity: 'Activity',
+  object: 'Object',
+  event: 'Meaningful event',
+  sequence: 'Sequence of events',
+}
+
 export default function Memories() {
-  const { memories, supportedPerson } = useApp()
+  const { memories, supportedPerson, lastSessionExperience } = useApp()
   const [editing, setEditing] = useState<MemoryItem | null>(null)
   const [adding, setAdding] = useState(false)
   const [personName, setPersonName] = useState(supportedPerson.name)
@@ -48,6 +69,12 @@ export default function Memories() {
   const [personSaved, setPersonSaved] = useState(false)
   const [deleteTarget, setDeleteTarget] = useState<string | null>(null)
   const [notice, setNotice] = useState('')
+
+  const dailyPerformance = lastSessionExperience?.kind === 'calming'
+    ? 'Steady and calm today.'
+    : lastSessionExperience?.kind === 'flourishing'
+      ? 'Doing well and feeling supported today.'
+      : 'Recent check-ins are still being gathered.'
 
   async function savePerson(event: FormEvent) {
     event.preventDefault()
@@ -126,37 +153,24 @@ export default function Memories() {
 
   return (
     <>
-      <PageHeader title="Personal Memories" subtitle="Caregiver space" />
-
-      <section className="card p-4" aria-labelledby="person-heading">
-        <h2 id="person-heading" className="text-xl">Person using Anchor</h2>
-        <p className="mt-1 text-ink/75">Keep their details separate from the people and stories they remember.</p>
-        <form onSubmit={savePerson} className="mt-4 space-y-3">
-          <label className="block font-semibold" htmlFor="supported-name">Name
-            <input id="supported-name" value={personName} onChange={(event) => { setPersonName(event.target.value); setPersonSaved(false) }} required className="mt-1 min-h-[56px] w-full rounded-xl border-2 border-mint-200 bg-white px-4" />
-          </label>
-          <label className="block font-semibold" htmlFor="personal-details">Helpful personal details
-            <textarea id="personal-details" value={personalDetails} onChange={(event) => { setPersonalDetails(event.target.value); setPersonSaved(false) }} rows={3} placeholder="Interests, familiar routines, or comforting topics" className="mt-1 w-full rounded-xl border-2 border-mint-200 bg-white p-3" />
-          </label>
-          <button className="btn-soft w-full" type="submit">Save person details</button>
-          {personSaved && <p role="status" className="text-garden-900">Person details saved.</p>}
-        </form>
-      </section>
+      <PageHeader title="Personal Memories" subtitle="Shared memory space" />
 
       <section className="mt-6" aria-labelledby="memories-heading">
         <div className="flex items-start justify-between gap-3">
           <div>
             <h2 id="memories-heading" className="text-xl">Memories for activities</h2>
-            <p className="mt-1 text-ink/75">Personal details here are used to create familiar activities.</p>
+            <p className="mt-1 text-ink/75">Add memories that feel familiar, comforting, and useful in daily activities.</p>
           </div>
           <button type="button" onClick={() => { setEditing(null); setAdding(true) }} aria-label="Add a memory" className="min-h-[56px] min-w-[56px] rounded-full bg-garden-700 text-white flex items-center justify-center"><Plus size={26} /></button>
         </div>
 
-        <div className="mt-3 rounded-card border-2 border-sun-main bg-sun-soft p-3">
-          <p className="font-semibold text-sun-deep">Fictional demonstration content</p>
-          <p className="text-sun-deep">Load sample memories for a complete demo. This is not real patient information.</p>
-          <button type="button" onClick={() => void loadDemo()} className="mt-3 min-h-[52px] rounded-xl border-2 border-sun-deep bg-white px-4 font-semibold text-sun-deep">Load fictional demo memories</button>
-        </div>
+        {memories.length === 0 && (
+          <div className="mt-3 rounded-card border-2 border-sun-main bg-sun-soft p-3">
+            <p className="font-semibold text-sun-deep">Fictional demonstration content</p>
+            <p className="text-sun-deep">Load sample memories for a complete demo. This is not real patient information.</p>
+            <button type="button" onClick={() => void loadDemo()} className="mt-3 min-h-[52px] rounded-xl border-2 border-sun-deep bg-white px-4 font-semibold text-sun-deep">Load fictional demo memories</button>
+          </div>
+        )}
 
         {notice && <p role="status" className="mt-3 rounded-xl bg-mint-100 p-3 text-garden-900">{notice}</p>}
         {adding && <MemoryForm onCancel={() => setAdding(false)} onSave={saveMemory} />}
@@ -165,7 +179,7 @@ export default function Memories() {
         {memories.length === 0 ? (
           <div className="card mt-4 p-5 text-center">
             <h3 className="text-xl">Start with a familiar memory</h3>
-            <p className="mt-2 text-ink/75">A caregiver can add a person, story, place, activity, object, or meaningful sequence. Activities will use what is shared here.</p>
+            <p className="mt-2 text-ink/75">Add a person, story, place, activity, object, or meaningful sequence. Activities will use what is shared here.</p>
             <button type="button" className="btn-primary mt-4 w-full" onClick={() => setAdding(true)}>Add the first memory</button>
           </div>
         ) : (
@@ -210,7 +224,9 @@ function MemoryForm({ memory, onCancel, onSave }: { memory?: MemoryItem; onCance
   const [voiceFile, setVoiceFile] = useState<File | null>(null)
   const [error, setError] = useState('')
   const [saving, setSaving] = useState(false)
+  const [stage, setStage] = useState<'pick' | 'details'>(memory ? 'details' : 'pick')
   const set = (key: keyof MemoryDraft, value: string) => setDraft((current) => ({ ...current, [key]: value }))
+  const visibleFields = kindFieldMap[draft.kind] ?? ['story', 'people', 'places', 'activities', 'objects']
 
   async function submit(event: FormEvent) {
     event.preventDefault()
@@ -230,33 +246,58 @@ function MemoryForm({ memory, onCancel, onSave }: { memory?: MemoryItem; onCance
     }
   }
 
+  if (!memory && stage === 'pick') {
+    return (
+      <div className="card mt-4 space-y-4 p-4" aria-label="Add memory">
+        <div>
+          <h3 className="text-xl">What would you like to add?</h3>
+          <p className="mt-1 text-ink/75">Choose the kind of memory first, then add only the details that matter.</p>
+        </div>
+        <div className="grid gap-2 sm:grid-cols-2">
+          {KINDS.map((kind) => (
+            <button
+              key={kind.value}
+              type="button"
+              onClick={() => { setDraft((current) => ({ ...current, kind: kind.value })); setStage('details') }}
+              className="min-h-[56px] rounded-xl border-2 border-mint-200 bg-white px-4 text-left font-semibold text-garden-900 transition hover:border-garden-500 hover:bg-mint-50"
+            >
+              {kind.label}
+            </button>
+          ))}
+        </div>
+        <button type="button" onClick={onCancel} className="btn-soft w-full">Cancel</button>
+      </div>
+    )
+  }
+
   return (
     <form onSubmit={(event) => void submit(event)} className="card mt-4 space-y-3 p-4" aria-label={memory ? 'Edit memory' : 'Add memory'}>
-      <h3 className="text-xl">{memory ? 'Edit memory' : 'Add a memory'}</h3>
-      <label className="block font-semibold" htmlFor="memory-kind">Type
-        <select id="memory-kind" value={draft.kind} onChange={(event) => set('kind', event.target.value)} className="mt-1 min-h-[56px] w-full rounded-xl border-2 border-mint-200 bg-white px-4">
-          {KINDS.map((kind) => <option key={kind.value} value={kind.value}>{kind.label}</option>)}
-        </select>
-      </label>
-      <label className="block font-semibold" htmlFor="memory-name">Name this memory or person
+      <h3 className="text-xl">{memory ? 'Edit memory' : `Add ${kindTitleMap[draft.kind]}`}</h3>
+      <label className="block font-semibold" htmlFor="memory-name">{draft.kind === 'person' ? 'Name this memory or person' : `Name this ${kindTitleMap[draft.kind].toLowerCase()}`}
         <input id="memory-name" value={draft.name} onChange={(event) => set('name', event.target.value)} required className="mt-1 min-h-[56px] w-full rounded-xl border-2 border-mint-200 bg-white px-4" />
       </label>
-      <label className="block font-semibold" htmlFor="memory-relationship">Relationship, if this is a person
-        <select id="memory-relationship" value={draft.relationship} onChange={(event) => set('relationship', event.target.value)} className="mt-1 min-h-[56px] w-full rounded-xl border-2 border-mint-200 bg-white px-4">
-          <option value="">Not specified</option>
-          {RELATIONSHIPS.map((relationship) => <option key={relationship} value={relationship}>{relationship}</option>)}
-        </select>
-      </label>
-      <label className="block font-semibold" htmlFor="memory-story">Personal story
-        <textarea id="memory-story" value={draft.story} onChange={(event) => set('story', event.target.value)} rows={4} placeholder="What makes this memory meaningful?" className="mt-1 w-full rounded-xl border-2 border-mint-200 bg-white p-3" />
-      </label>
-      <DetailField id="memory-people" label="People mentioned" value={draft.people} onChange={(value) => set('people', value)} />
-      <DetailField id="memory-places" label="Places" value={draft.places} onChange={(value) => set('places', value)} />
-      <DetailField id="memory-activities" label="Activities" value={draft.activities} onChange={(value) => set('activities', value)} />
-      <DetailField id="memory-objects" label="Meaningful objects" value={draft.objects} onChange={(value) => set('objects', value)} />
-      <label className="block font-semibold" htmlFor="memory-events">Events in order, one per line
-        <textarea id="memory-events" value={draft.events} onChange={(event) => set('events', event.target.value)} rows={4} placeholder={'A familiar event\nWhat happened next'} className="mt-1 w-full rounded-xl border-2 border-mint-200 bg-white p-3" />
-      </label>
+      {draft.kind === 'person' && (
+        <label className="block font-semibold" htmlFor="memory-relationship">Relationship, if this is a person
+          <select id="memory-relationship" value={draft.relationship} onChange={(event) => set('relationship', event.target.value)} className="mt-1 min-h-[56px] w-full rounded-xl border-2 border-mint-200 bg-white px-4">
+            <option value="">Not specified</option>
+            {RELATIONSHIPS.map((relationship) => <option key={relationship} value={relationship}>{relationship}</option>)}
+          </select>
+        </label>
+      )}
+      {visibleFields.includes('story') && (
+        <label className="block font-semibold" htmlFor="memory-story">{draft.kind === 'person' ? 'Personal story' : 'Short description'}
+          <textarea id="memory-story" value={draft.story} onChange={(event) => set('story', event.target.value)} rows={4} placeholder={draft.kind === 'person' ? 'What makes this memory meaningful?' : 'What is special or memorable about this?'} className="mt-1 w-full rounded-xl border-2 border-mint-200 bg-white p-3" />
+        </label>
+      )}
+      {visibleFields.includes('people') && <DetailField id="memory-people" label="People mentioned" value={draft.people} onChange={(value) => set('people', value)} />}
+      {visibleFields.includes('places') && <DetailField id="memory-places" label="Places" value={draft.places} onChange={(value) => set('places', value)} />}
+      {visibleFields.includes('activities') && <DetailField id="memory-activities" label="Activities" value={draft.activities} onChange={(value) => set('activities', value)} />}
+      {visibleFields.includes('objects') && <DetailField id="memory-objects" label="Meaningful objects" value={draft.objects} onChange={(value) => set('objects', value)} />}
+      {visibleFields.includes('events') && (
+        <label className="block font-semibold" htmlFor="memory-events">Events in order, one per line
+          <textarea id="memory-events" value={draft.events} onChange={(event) => set('events', event.target.value)} rows={4} placeholder={'A familiar event\nWhat happened next'} className="mt-1 w-full rounded-xl border-2 border-mint-200 bg-white p-3" />
+        </label>
+      )}
       <label className="block rounded-xl border-2 border-mint-200 bg-white p-3 font-semibold" htmlFor="memory-photo"><span className="flex items-center gap-2"><Camera size={20} /> Photo (optional)</span>
         <input id="memory-photo" type="file" accept="image/*" onChange={(event) => setPhotoFile(event.target.files?.[0] ?? null)} className="mt-2 block w-full text-base" />
         {memory?.photo && !photoFile && <span className="mt-2 block text-sm font-normal text-ink/70">A photo is already attached. Choose another to replace it.</span>}

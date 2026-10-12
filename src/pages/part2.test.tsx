@@ -47,6 +47,28 @@ describe('Part 2 caregiver and activity flow', () => {
     expect(screen.getByRole('status')).toHaveTextContent('Fictional demo memories loaded')
   })
 
+  it('hides the demo reminder once memory content is loaded', async () => {
+    const user = userEvent.setup()
+    useApp.setState({ memories: DEMO_MEMORIES })
+    mount('/memories')
+    expect(screen.queryByText('Fictional demonstration content')).not.toBeInTheDocument()
+    expect(screen.getByRole('heading', { name: 'Anita · daughter' })).toBeInTheDocument()
+    await user.click(screen.getByRole('button', { name: 'Add a memory' }))
+    expect(screen.queryByText('Fictional demonstration content')).not.toBeInTheDocument()
+  })
+
+  it('starts with a simple memory-type chooser and only shows the relevant fields', async () => {
+    const user = userEvent.setup()
+    mount('/memories')
+    await user.click(screen.getByRole('button', { name: 'Add the first memory' }))
+    expect(screen.getByRole('heading', { name: 'What would you like to add?' })).toBeInTheDocument()
+    await user.click(screen.getByRole('button', { name: 'Person' }))
+    expect(screen.getByLabelText('Name this memory or person')).toBeInTheDocument()
+    expect(screen.getByLabelText('Relationship, if this is a person')).toBeInTheDocument()
+    expect(screen.queryByLabelText('Events in order, one per line')).not.toBeInTheDocument()
+    expect(screen.queryByLabelText('Type')).not.toBeInTheDocument()
+  })
+
   it('uses stored portraits and offers gentle identity clues in Familiar Faces', async () => {
     const user = userEvent.setup()
     useApp.setState({ memories: DEMO_MEMORIES })

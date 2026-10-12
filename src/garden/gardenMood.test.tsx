@@ -51,6 +51,11 @@ describe('garden rendering', () => {
     expect(screen.getByRole('img', { name: /A peaceful aquarium|A quiet memory aquarium|A bright memory aquarium/i })).toBeInTheDocument()
   })
 
+  it('uses aquarium-specific mood wording', () => {
+    render(<MemoryRouter><Garden /></MemoryRouter>)
+    expect(screen.getByText(/Aquarium mood:/i)).toBeInTheDocument()
+  })
+
   it('provides an accessible sound toggle', () => {
     render(<MemoryRouter><Garden /></MemoryRouter>)
     expect(screen.getByRole('button', { name: /sounds off|sounds on/i })).toBeInTheDocument()

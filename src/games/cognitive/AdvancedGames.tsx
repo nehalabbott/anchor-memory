@@ -8,6 +8,17 @@ import { useApp } from '@/store/useApp'
 import { useScreenContext } from '@/store/useScreenContext'
 import { FeedbackPopup, HowToPlayCard, choiceStateClass, type FeedbackStatus } from '@/games/GameFeedback'
 
+const COLOR_MAP = {
+  Blue: '#4F9AE8',
+  Green: '#1E9A7A',
+  Yellow: '#D8A93D',
+  Pink: '#D77BA5',
+  Purple: '#8C6AD8',
+  Orange: '#D97A45',
+  Red: '#D96161',
+  White: '#F8F8F8',
+} as const
+
 export type AdvancedGameId = 'dual-n-back' | 'trail-making' | 'category-association'
 
 export interface DualNBackRound {
@@ -305,6 +316,8 @@ function BackToGamesButton() {
 
 export function DualNBackGame() {
   const { memories } = useApp()
+  const accentColor = useApp((s) => s.preferences.favoriteColors[0])
+  const accent = accentColor && accentColor in COLOR_MAP ? COLOR_MAP[accentColor as keyof typeof COLOR_MAP] : '#0B8A70'
   const setGameContext = useScreenContext((state) => state.setGameContext)
   const { adaptive, begin, session, submitResponse, record, promptStartedAt } = useSessionGame('dual-n-back')
   const [started, setStarted] = useState(false)
@@ -402,14 +415,14 @@ export function DualNBackGame() {
           <div className="mt-4 grid gap-2" style={{ gridTemplateColumns: `repeat(${round.gridSize}, minmax(0, 1fr))` }} aria-label="Dual N-Back board">
             {boardCells.map((cell) => {
               const active = cell === round.currentPosition
-              return <button key={cell} type="button" aria-label={`Grid tile ${cell}`} className={`min-h-[58px] rounded-xl border-2 font-bold ${active ? 'border-garden-700 bg-garden-100 text-garden-900' : 'border-mint-200 bg-white text-ink/80'}`}>
+              return <button key={cell} type="button" aria-label={`Grid tile ${cell}`} className="min-h-[58px] rounded-xl border-2 font-bold" style={active ? { borderColor: accent, background: `${accent}18`, color: accent } : { borderColor: `${accent}55`, background: 'white', color: '#17313A' }}>
                 {active ? '●' : cell}
               </button>
             })}
           </div>
           <div className="mt-4 grid grid-cols-2 gap-3">
-            <button type="button" disabled={Boolean(status)} onClick={() => answer('match')} className="min-h-[60px] rounded-2xl border-2 border-garden-600 bg-mint-100 font-semibold text-garden-900 disabled:opacity-60">Match</button>
-            <button type="button" disabled={Boolean(status)} onClick={() => answer('no-match')} className="min-h-[60px] rounded-2xl border-2 border-sky-deep bg-sky-soft font-semibold text-sky-deep disabled:opacity-60">No Match</button>
+            <button type="button" disabled={Boolean(status)} onClick={() => answer('match')} className="min-h-[60px] rounded-2xl border-2 font-semibold disabled:opacity-60" style={{ borderColor: accent, background: `${accent}18`, color: accent }}>Match</button>
+            <button type="button" disabled={Boolean(status)} onClick={() => answer('no-match')} className="min-h-[60px] rounded-2xl border-2 font-semibold disabled:opacity-60" style={{ borderColor: accent, background: `${accent}18`, color: accent }}>No Match</button>
           </div>
           {complete && <button type="button" onClick={() => { setStarted(false); setComplete(false); setIndex(0); setFeedback(''); setStatus(null); }} className="btn-primary mt-4 w-full">Play again</button>}
         </>
@@ -420,6 +433,8 @@ export function DualNBackGame() {
 }
 
 export function TrailMakingGame() {
+  const accentColor = useApp((s) => s.preferences.favoriteColors[0])
+  const accent = accentColor && accentColor in COLOR_MAP ? COLOR_MAP[accentColor as keyof typeof COLOR_MAP] : '#0B8A70'
   const setGameContext = useScreenContext((state) => state.setGameContext)
   const { adaptive, begin, session, submitResponse, record } = useSessionGame('trail-making')
   const [started, setStarted] = useState(false)
@@ -518,7 +533,7 @@ export function TrailMakingGame() {
         <>
           <FeedbackPopup status={status} message={feedback} onRetry={retry} onContinue={advance} />
           <p className="mt-2 text-ink/75">Follow the route in order: 1 → A → 2 → B → ...</p>
-          <div className="relative mt-4 min-h-[260px] rounded-2xl border-2 border-mint-200 bg-mint-50">
+          <div className="relative mt-4 min-h-[260px] rounded-2xl border-2" style={{ borderColor: accent, background: `${accent}12` }}>
             {round.nodes.map((node) => {
               const isSelected = selected.includes(node.label)
               const isNext = node.label === round.sequence[index]
@@ -529,7 +544,7 @@ export function TrailMakingGame() {
               </button>
             })}
           </div>
-          <p className="mt-4 font-semibold text-garden-900">Next: {round.sequence[index]}</p>
+          <p className="mt-4 font-semibold" style={{ color: accent }}>Next: {round.sequence[index]}</p>
           {complete && <button type="button" onClick={() => { setStarted(false); setIndex(0); setSelected([]); setFeedback(''); setStatus(null); setComplete(false); }} className="btn-primary mt-4 w-full">Play again</button>}
         </>
       )}
@@ -541,6 +556,8 @@ const CATEGORY_ROUND_COUNT = 8
 
 export function CategoryAssociationGame() {
   const { memories } = useApp()
+  const accentColor = useApp((s) => s.preferences.favoriteColors[0])
+  const accent = accentColor && accentColor in COLOR_MAP ? COLOR_MAP[accentColor as keyof typeof COLOR_MAP] : '#0B8A70'
   const setGameContext = useScreenContext((state) => state.setGameContext)
   const { adaptive, begin, submitResponse } = useSessionGame('category-association')
   const [started, setStarted] = useState(false)
@@ -637,8 +654,8 @@ export function CategoryAssociationGame() {
         <>
           <FeedbackPopup status={status} message={feedback} onRetry={retry} onContinue={advance} />
           <p className="mt-2 text-sm text-ink/60">Round {round} of {CATEGORY_ROUND_COUNT}</p>
-          <div className="mt-2 rounded-2xl border-2 border-mint-200 bg-mint-50 p-4">
-            <div className="flex items-center gap-2 text-garden-900"><Tags size={22} /> <span className="font-semibold">{prompt.category}</span></div>
+          <div className="mt-2 rounded-2xl border-2 p-4" style={{ borderColor: accent, background: `${accent}14` }}>
+            <div className="flex items-center gap-2" style={{ color: accent }}><Tags size={22} /> <span className="font-semibold">{prompt.category}</span></div>
             <p className="mt-2 text-lg">{prompt.instruction}</p>
           </div>
           <div className="mt-4 grid grid-cols-2 gap-3">

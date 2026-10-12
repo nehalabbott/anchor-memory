@@ -29,12 +29,20 @@
     --theme-accent: #0b8a70;
     --theme-soft: #edf5f3;
   }
+  :root {
+    --theme-bg: #EAF4F4;
+    --theme-panel: #ffffff;
+    --theme-text: #17313A;
+    --theme-accent: #0B8A70;
+    --theme-soft: #EAF4F4;
+  }
   body {
     background: var(--theme-bg, #EAF4F4);
     color: var(--theme-text, #17313A);
   }
   .theme-panel { background: var(--theme-panel, #fff); }
   .theme-accent { color: var(--theme-accent, #0B8A70); }
+  .theme-accent-bg { background: var(--theme-accent, #0B8A70); }
   h1, h2, h3 { @apply font-display font-bold text-ink; }
   /* Visible keyboard focus everywhere (accessibility) */
   :focus-visible { outline: 3px solid #7C3AED; outline-offset: 3px; border-radius: 12px; }
@@ -46,10 +54,17 @@
 @layer components {
   /* Every tappable target is at least 56px tall (HCI goal: large buttons) */
   .btn { @apply inline-flex items-center justify-center gap-3 min-h-[56px] px-6 rounded-pill font-display font-semibold text-lg transition active:scale-[.98]; }
-  .btn-primary { @apply btn bg-garden-600 text-white hover:bg-garden-700; }
-  .btn-soft { @apply btn bg-white text-garden-700 border-2 border-mint-200 hover:bg-mint-100; }
-  .card { @apply bg-white rounded-card shadow-soft border border-mint-200; }
-  .tile { @apply rounded-card border-2 p-4 text-left min-h-[120px] flex flex-col justify-between transition active:scale-[.98]; }
+  .btn-primary { @apply btn text-white; background: var(--theme-accent, #0B8A70); }
+  .btn-primary:hover { filter: brightness(.96); }
+  .btn-soft { @apply btn bg-white text-garden-700 border-2 border-mint-200 hover:bg-mint-100; border-color: var(--theme-accent, #0B8A70); }
+  .card { @apply rounded-card shadow-soft border; background: var(--theme-panel, #ffffff); border-color: color-mix(in srgb, var(--theme-accent, #0B8A70) 28%, white); }
+  .tile { @apply rounded-card border-2 p-4 text-left min-h-[120px] flex flex-col justify-between transition active:scale-[.98]; background: color-mix(in srgb, var(--theme-soft, #EAF4F4) 72%, white); border-color: color-mix(in srgb, var(--theme-accent, #0B8A70) 45%, white); }
+  .choice-default { border-color: var(--theme-accent, #0B8A70); background: rgba(255,255,255,.94); color: var(--theme-text, #17313A); }
+  .choice-selected { border-color: var(--theme-accent, #0B8A70); background: var(--theme-soft, #EAF4F4); color: var(--theme-text, #17313A); }
+  .choice-correct { border-color: #1E9A7A; background: rgba(30,154,122,.14); color: #115b47; }
+  .choice-wrong { border-color: #D96161; background: rgba(217,97,97,.12); color: #8b1e1e; }
+  .feedback-correct { border-color: #1E9A7A; background: rgba(30,154,122,.18); color: #115b47; }
+  .feedback-wrong { border-color: #D96161; background: rgba(217,97,97,.14); color: #8b1e1e; }
   .garden-scene { @apply relative isolate h-[300px] overflow-hidden; background: linear-gradient(#BFE6F3 0%, #E8F4D5 68%, #8EB887 100%); }
   .garden-calming { background: linear-gradient(#DCECF1 0%, #E4ECE7 70%, #88A89B 100%); }
   .garden-sun { @apply absolute right-8 top-6 flex h-14 w-14 items-center justify-center rounded-full bg-sun-soft text-4xl text-sun-main; }

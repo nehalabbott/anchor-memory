@@ -13,6 +13,17 @@ import { ScreenContextSync, useScreenContextTicker } from '@/store/useScreenCont
  * App shell: scrollable content  ->  persistent Assistant toolbar  ->  bottom nav.
  * Centered phone-width column on desktop so the Lab 5 wireframes are reproduced faithfully.
  */
+const COLOR_MAP = {
+  Blue: '#4F9AE8',
+  Green: '#1E9A7A',
+  Yellow: '#D8A93D',
+  Pink: '#D77BA5',
+  Purple: '#8C6AD8',
+  Orange: '#D97A45',
+  Red: '#D96161',
+  White: '#F8F8F8',
+} as const
+
 export default function Layout() {
   const largeText = useApp((s) => s.largeText)
   const preferences = useApp((s) => s.preferences)
@@ -22,7 +33,14 @@ export default function Layout() {
   useScreenContextTicker()
   useEffect(() => {
     document.body.dataset.theme = preferences.theme
-  }, [preferences.theme])
+    const chosenColor = preferences.favoriteColors[0]
+    const accent = chosenColor && COLOR_MAP[chosenColor as keyof typeof COLOR_MAP] ? COLOR_MAP[chosenColor as keyof typeof COLOR_MAP] : null
+    const themeAccent = accent !== null ? accent : (getComputedStyle(document.body).getPropertyValue('--theme-accent') || '#0B8A70')
+    const themeSoft = accent ? `${accent}22` : (getComputedStyle(document.body).getPropertyValue('--theme-soft') || '#EAF4F4')
+    const root = document.documentElement
+    root.style.setProperty('--theme-accent', themeAccent)
+    root.style.setProperty('--theme-soft', themeSoft)
+  }, [preferences.favoriteColors, preferences.theme])
   useEffect(() => {
     void initializeAppData()
     const retryWhenOnline = () => { void initializeAppData({ retry: true, hadLocalData: true }) }

@@ -1,13 +1,12 @@
 /**
- * Single source of truth for navigation. Kept to 3 items on purpose, so the app stays simple
- * for someone living with dementia to use: upload/view a memory, play a game, or visit the
- * memory aquarium. (Home and Profile still exist as routes for now — see routes.ts history —
- * they are just not in the main tab bar.)
+ * Shared navigation for the main app. The profile option stays visible so users can reach
+ * their personal details and progress without needing to hunt through the home screen.
  */
 export const NAV = [
   { path: '/memories', label: 'Memories', icon: 'home' },
-  { path: '/games',    label: 'Games',    icon: 'brain' },
-  { path: '/garden',   label: 'Memory Aquarium',   icon: 'flower' },
+  { path: '/games', label: 'Games', icon: 'brain' },
+  { path: '/garden', label: 'Memory Aquarium', icon: 'flower' },
+  { path: '/profile', label: 'My Journey', icon: 'user' },
 ] as const
 
 const LABELS: Record<string, string> = {

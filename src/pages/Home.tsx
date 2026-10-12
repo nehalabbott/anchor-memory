@@ -5,12 +5,10 @@ import { useApp } from '@/store/useApp'
 const greeting = () => { const h = new Date().getHours(); return h < 12 ? 'Good morning' : h < 17 ? 'Good afternoon' : 'Good evening' }
 
 const TILES = [
-  { to: '/games',    label: 'Memory Game',      icon: Brain,        cls: 'bg-mint-100 border-garden-500 text-garden-900' },
-  { to: '/memories', label: 'Upload Memory',    icon: Camera,       cls: 'bg-rose-soft border-rose-main text-rose-deep' },
-  { to: '/memories', label: 'Your Memories',    icon: Image,        cls: 'bg-sky-soft border-sky-main text-sky-deep' },
-  { to: '/games',    label: 'Daily Activities', icon: CalendarDays, cls: 'bg-sun-soft border-sun-main text-sun-deep' },
-  { to: '/profile',  label: 'Enter Log',        icon: PenLine,      cls: 'bg-iris-soft border-iris-main text-iris-deep' },
-  { to: '/profile',  label: 'My Profile',       icon: User,         cls: 'bg-garden-100 border-garden-500 text-garden-700' },
+  { to: '/memories', label: 'Memories',          icon: Image,        cls: 'bg-sky-soft border-sky-main text-sky-deep' },
+  { to: '/games',    label: 'Games',             icon: Brain,        cls: 'bg-mint-100 border-garden-500 text-garden-900' },
+  { to: '/garden',   label: 'Memory Aquarium',  icon: Flower2,      cls: 'bg-garden-100 border-garden-500 text-garden-700' },
+  { to: '/profile',  label: 'My Journey',        icon: User,         cls: 'bg-iris-soft border-iris-main text-iris-deep' },
 ]
 
 export default function Home() {

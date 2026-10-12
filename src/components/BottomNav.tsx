@@ -8,7 +8,7 @@ const ICONS = { home: Home, brain: Brain, flower: Flower2, user: User }
 export default function BottomNav() {
   return (
     <nav aria-label="Main" className="bg-white border-t border-mint-200 px-2 pt-2 pb-[max(10px,env(safe-area-inset-bottom))]">
-      <ul className="grid grid-cols-3 gap-1">
+      <ul className="grid grid-cols-4 gap-1">
         {NAV.map(({ path, label, icon }) => {
           const Icon = ICONS[icon]
           return (

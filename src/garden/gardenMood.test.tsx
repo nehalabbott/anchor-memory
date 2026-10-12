@@ -10,7 +10,7 @@ beforeEach(() => {
   useApp.setState({ memories: [], lastSessionExperience: null, gardenAudioEnabled: false })
   useScreenContext.setState({
     route: '/garden',
-    screen: 'Your Memory Garden',
+    screen: 'Memory Aquarium',
     activeGame: null,
     gameDomain: null,
     difficultyLevel: null,
@@ -42,13 +42,13 @@ describe('garden rendering', () => {
   it('renders with existing memories and no breakage', () => {
     useApp.setState({ memories: [{ id: 'm1', kind: 'person', name: 'Rahul', relationship: 'son', story: 'talking in the garden', createdAt: Date.now() }] })
     render(<MemoryRouter><Garden /></MemoryRouter>)
-    expect(screen.getByRole('heading', { name: /Your Memory Garden/i })).toBeInTheDocument()
+    expect(screen.getByRole('heading', { name: /Memory Aquarium/i })).toBeInTheDocument()
     expect(screen.getByText(/quiet|blooming/i)).toBeInTheDocument()
   })
 
   it('renders safely without memories', () => {
     render(<MemoryRouter><Garden /></MemoryRouter>)
-    expect(screen.getByRole('img', { name: /A peaceful garden|A quiet garden|A bright garden/i })).toBeInTheDocument()
+    expect(screen.getByRole('img', { name: /A peaceful aquarium|A quiet memory aquarium|A bright memory aquarium/i })).toBeInTheDocument()
   })
 
   it('provides an accessible sound toggle', () => {

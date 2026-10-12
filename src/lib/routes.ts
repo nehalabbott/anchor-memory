@@ -7,11 +7,11 @@
 export const NAV = [
   { path: '/memories', label: 'Memories', icon: 'home' },
   { path: '/games',    label: 'Games',    icon: 'brain' },
-  { path: '/garden',   label: 'Garden',   icon: 'flower' },
+  { path: '/garden',   label: 'Memory Aquarium',   icon: 'flower' },
 ] as const
 
 const LABELS: Record<string, string> = {
-  '/': 'Home', '/games': 'Choose an Activity', '/garden': 'Your Memory Garden',
+  '/': 'Home', '/games': 'Choose an Activity', '/garden': 'Memory Aquarium',
   '/profile': 'My Journey', '/profile/assessment': 'Cognitive Check-in', '/memories': 'Your Memories',
   '/games/faces': 'Familiar Faces', '/games/match': 'Pattern & Shape Match',
   '/games/sequence': 'Sequence Memory', '/games/category': 'Odd One Out',

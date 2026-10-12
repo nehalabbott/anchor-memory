@@ -35,11 +35,11 @@ describe('Profile Part 2 connections', () => {
     })
   })
 
-  it('opens the existing Memory Garden route from Recent Memory Garden', async () => {
+  it('opens the existing Memory Aquarium route from Recent Memory Aquarium', async () => {
     const user = userEvent.setup()
     mountProfile()
-    await user.click(screen.getByRole('link', { name: /Recent Memory Garden/ }))
-    expect(await screen.findByRole('heading', { name: 'Your Memory Garden' })).toBeInTheDocument()
+    await user.click(screen.getByRole('link', { name: /Recent Memory Aquarium/ }))
+    expect(await screen.findByRole('heading', { name: 'Memory Aquarium' })).toBeInTheDocument()
   })
 
   it('opens the shared Mo assistant from A Helping Hand', async () => {

@@ -15,7 +15,7 @@ import { useAdaptiveDifficulty } from '@/hooks/useAdaptiveDifficulty'
 import { selectChoicesWithRequired } from '@/lib/adaptiveDifficulty/choices'
 import { AdvancedGamePage } from '@/games/cognitive/AdvancedGames'
 import { useScreenContext } from '@/store/useScreenContext'
-import { HowToPlayCard } from '@/games/GameFeedback'
+import { FeedbackPopup, HowToPlayCard, choiceStateClass, type FeedbackStatus } from '@/games/GameFeedback'
 
 const ROUTE_ACTIVITY = {
   faces: 'faces',
@@ -82,7 +82,10 @@ function Activity({ activityId }: { activityId: ActivityId }) {
   const [showExperience, setShowExperience] = useState(false)
   const [roundIndex, setRoundIndex] = useState(0)
   const [answered, setAnswered] = useState(false)
+  const [status, setStatus] = useState<FeedbackStatus>(null)
   const [feedback, setFeedback] = useState('')
+  const [hint, setHint] = useState<string | null>(null)
+  const [selectedChoiceId, setSelectedChoiceId] = useState<string | null>(null)
   const [simplerMode, setSimplerMode] = useState(false)
   const [sequenceVisible, setSequenceVisible] = useState(true)
   const [sequenceSelection, setSequenceSelection] = useState<string[]>([])
@@ -176,6 +179,12 @@ function Activity({ activityId }: { activityId: ActivityId }) {
     promptStartedAt.current = Date.now()
     setRoundDifficulty(adaptive.config)
     setStarted(true)
+    setAnswered(false)
+    setStatus(null)
+    setFeedback('')
+    setHint(null)
+    setSelectedChoiceId(null)
+    setSequenceSelection([])
     recordEvent({ type: 'activity_started', at: Date.now(), sessionId: session.sessionId, activityId })
     presentCurrentMemory()
   }
@@ -239,7 +248,10 @@ function Activity({ activityId }: { activityId: ActivityId }) {
 
   function finishRound() {
     setAnswered(false)
+    setStatus(null)
     setFeedback('')
+    setHint(null)
+    setSelectedChoiceId(null)
     setSequenceVisible(true)
     setSequenceSelection([])
     setSimplerMode(false)
@@ -257,14 +269,26 @@ function Activity({ activityId }: { activityId: ActivityId }) {
     } else finish('finished')
   }
 
+  function retryRound() {
+    setAnswered(false)
+    setStatus(null)
+    setFeedback('')
+    setHint(null)
+    setSelectedChoiceId(null)
+    if (activityId === 'sequence') setSequenceSelection([])
+  }
+
   function chooseFace(memoryId: string) {
     if (!face) return
     const correct = memoryId === face.memory.id
     submitResponse(face.id, memoryId, correct)
+    setSelectedChoiceId(memoryId)
     setAnswered(true)
+    setStatus(correct ? 'correct' : 'incorrect')
     setFeedback(correct
       ? "That's right. This person is part of your memories."
-      : difficulty.hintsEnabled ? `That's okay. Here's a clue: ${face.identityClue}` : "That's okay. We can look at the familiar names together.")
+      : difficulty.hintsEnabled ? "That's okay. Let's look again." : "That's okay. We can look at the familiar names together.")
+    setHint(correct ? null : face.identityClue)
   }
 
   function choosePattern(tokenId: string) {
@@ -273,10 +297,13 @@ function Activity({ activityId }: { activityId: ActivityId }) {
     if (!correct) useScreenContext.getState().setLastFailedAction('missed the sequence match')
     else useScreenContext.getState().setLastFailedAction(null)
     submitResponse(pattern.id, tokenId, correct)
+    setSelectedChoiceId(tokenId)
     setAnswered(true)
+    setStatus(correct ? 'correct' : 'incorrect')
     setFeedback(correct
       ? "That's right. You noticed the repeating pattern."
-      : difficulty.hintsEnabled ? `That's okay. Look at the pattern again: ${pattern.clue}` : "That's okay. We can look for what repeats together.")
+      : difficulty.hintsEnabled ? "That's okay. Look at the pattern again." : "That's okay. We can look for what repeats together.")
+    setHint(correct ? null : pattern.clue)
   }
 
   function chooseCategory(tokenId: string) {
@@ -285,10 +312,13 @@ function Activity({ activityId }: { activityId: ActivityId }) {
     if (!correct) useScreenContext.getState().setLastFailedAction('selected the wrong category')
     else useScreenContext.getState().setLastFailedAction(null)
     submitResponse(category.id, tokenId, correct)
+    setSelectedChoiceId(tokenId)
     setAnswered(true)
+    setStatus(correct ? 'correct' : 'incorrect')
     setFeedback(correct
       ? "That's right. You found the item from a different group."
-      : difficulty.hintsEnabled ? `That's okay. ${category.explanation}` : "That's okay. We can look at the group together.")
+      : difficulty.hintsEnabled ? "That's okay. Let's look again." : "That's okay. We can look at the group together.")
+    setHint(correct ? null : category.explanation)
   }
 
   function chooseSequenceToken(tokenId: string) {
@@ -305,9 +335,11 @@ function Activity({ activityId }: { activityId: ActivityId }) {
     else useScreenContext.getState().setLastFailedAction(null)
     submitResponse(sequence.id, responseId, correct)
     setAnswered(true)
+    setStatus(correct ? 'correct' : 'incorrect')
     setFeedback(correct
       ? "That's right. You kept the items in order."
       : "That's okay. Let's look at the sequence together.")
+    setHint(correct ? null : `Try the same order you just saw: ${targetSequence.map((token) => token.label).join(', ')}.`)
   }
 
   function chooseExperience(kind: SessionExperience['kind']) {
@@ -376,10 +408,10 @@ function Activity({ activityId }: { activityId: ActivityId }) {
               <p className="font-semibold text-garden-900">Take your time</p>
               <button type="button" onClick={pause} className="min-h-[48px] rounded-xl border-2 border-mint-200 bg-white px-3 font-semibold flex items-center gap-2"><Pause size={19} /> Pause</button>
             </div>
-            {activityId === 'faces' && face && <FacesActivity prompt={face} choices={faceChoices} targetScale={difficulty.targetScale} hintsEnabled={difficulty.hintsEnabled} answered={answered} feedback={feedback} onChoose={chooseFace} onContinue={finishRound} />}
-            {activityId === 'pattern' && pattern && <PatternActivity round={pattern} choices={patternChoices} simpler={simplerMode} targetScale={difficulty.targetScale} answered={answered} feedback={feedback} onChoose={choosePattern} onContinue={finishRound} />}
-            {activityId === 'sequence' && sequence && <SequenceActivity instruction={sequence.instruction} target={targetSequence} choices={sequenceChoices} simpler={simplerMode} targetScale={difficulty.targetScale} visible={sequenceVisible} selection={sequenceSelection} answered={answered} feedback={feedback} onHide={hideSequence} onChoose={chooseSequenceToken} onUndo={() => setSequenceSelection((current) => current.slice(0, -1))} onCheck={checkSequence} onContinue={finishRound} />}
-            {activityId === 'category' && category && <CategoryActivity round={category} choices={categoryChoices} simpler={simplerMode} targetScale={difficulty.targetScale} answered={answered} feedback={feedback} onChoose={chooseCategory} onContinue={finishRound} />}
+            {activityId === 'faces' && face && <FacesActivity prompt={face} choices={faceChoices} targetScale={difficulty.targetScale} hintsEnabled={difficulty.hintsEnabled} answered={answered} status={status} selectedChoiceId={selectedChoiceId} correctChoiceId={face.memory.id} feedback={feedback} hint={hint} onChoose={chooseFace} onRetry={retryRound} onContinue={finishRound} />}
+            {activityId === 'pattern' && pattern && <PatternActivity round={pattern} choices={patternChoices} simpler={simplerMode} targetScale={difficulty.targetScale} answered={answered} status={status} selectedChoiceId={selectedChoiceId} correctChoiceId={pattern.answer.id} feedback={feedback} hint={hint} onChoose={choosePattern} onRetry={retryRound} onContinue={finishRound} />}
+            {activityId === 'sequence' && sequence && <SequenceActivity instruction={sequence.instruction} target={targetSequence} choices={sequenceChoices} simpler={simplerMode} targetScale={difficulty.targetScale} visible={sequenceVisible} selection={sequenceSelection} answered={answered} status={status} feedback={feedback} hint={hint} onHide={hideSequence} onChoose={chooseSequenceToken} onUndo={() => setSequenceSelection((current) => current.slice(0, -1))} onCheck={checkSequence} onRetry={retryRound} onContinue={finishRound} />}
+            {activityId === 'category' && category && <CategoryActivity round={category} choices={categoryChoices} simpler={simplerMode} targetScale={difficulty.targetScale} answered={answered} status={status} selectedChoiceId={selectedChoiceId} correctChoiceId={category.answerId} feedback={feedback} hint={hint} onChoose={chooseCategory} onRetry={retryRound} onContinue={finishRound} />}
           </section>
           {helpActions}
           <button type="button" onClick={() => finish('left')} className="mt-4 min-h-[48px] w-full rounded-xl px-3 text-center font-semibold text-ink/70">Finish activity</button>
@@ -389,14 +421,19 @@ function Activity({ activityId }: { activityId: ActivityId }) {
   )
 }
 
-function FacesActivity({ prompt, choices, targetScale, hintsEnabled, answered, feedback, onChoose, onContinue }: {
+function FacesActivity({ prompt, choices, targetScale, hintsEnabled, answered, status, selectedChoiceId, correctChoiceId, feedback, hint, onChoose, onRetry, onContinue }: {
   prompt: ReturnType<typeof buildFacePrompts>[number]
   choices: ReturnType<typeof buildFacePrompts>[number]['choices']
   targetScale: number
   hintsEnabled: boolean
   answered: boolean
+  status: FeedbackStatus
+  selectedChoiceId: string | null
+  correctChoiceId: string
   feedback: string
+  hint: string | null
   onChoose: (memoryId: string) => void
+  onRetry: () => void
   onContinue: () => void
 }) {
   return (
@@ -409,22 +446,31 @@ function FacesActivity({ prompt, choices, targetScale, hintsEnabled, answered, f
       <h2 className="mt-4 text-center text-2xl">Who is this person?</h2>
       {!prompt.memory.photo && hintsEnabled && <p className="mt-2 rounded-xl bg-sun-soft p-3 text-center text-sun-deep">{prompt.identityClue}</p>}
       <div className="mt-4 grid gap-3">
-        {choices.map((choice) => <button key={choice.id} type="button" disabled={answered} onClick={() => onChoose(choice.id)} style={{ minHeight: `${64 * targetScale}px` }} className="rounded-2xl border-2 border-garden-600 bg-white px-4 text-lg font-semibold text-garden-900 disabled:opacity-80">{choice.name}{choice.relationship ? `, ${choice.relationship}` : ''}</button>)}
+        {choices.map((choice) => {
+          const isWrong = status === 'incorrect' && choice.id === selectedChoiceId
+          const isCorrect = status !== null && choice.id === correctChoiceId
+          const stateClass = isWrong ? choiceStateClass('wrong') : isCorrect ? choiceStateClass('correct') : choiceStateClass('default')
+          return <button key={choice.id} type="button" disabled={answered} onClick={() => onChoose(choice.id)} style={{ minHeight: `${64 * targetScale}px` }} className={`rounded-2xl border-2 px-4 text-lg font-semibold disabled:opacity-80 ${stateClass}`}>{choice.name}{choice.relationship ? `, ${choice.relationship}` : ''}</button>
+        })}
       </div>
-      {feedback && <p role="status" className="mt-4 rounded-xl bg-mint-100 p-3 text-center text-lg text-garden-900">{feedback}</p>}
-      {answered && <button type="button" onClick={onContinue} className="btn-primary mt-3 w-full">Continue together</button>}
+      <FeedbackPopup status={status} message={feedback} hint={hint ?? undefined} onRetry={onRetry} onContinue={onContinue} />
     </div>
   )
 }
 
-function PatternActivity({ round, choices, simpler, targetScale, answered, feedback, onChoose, onContinue }: {
+function PatternActivity({ round, choices, simpler, targetScale, answered, status, selectedChoiceId, correctChoiceId, feedback, hint, onChoose, onRetry, onContinue }: {
   round: ReturnType<typeof buildPatternRounds>[number]
   choices: GameToken[]
   simpler: boolean
   targetScale: number
   answered: boolean
+  status: FeedbackStatus
+  selectedChoiceId: string | null
+  correctChoiceId: string
   feedback: string
+  hint: string | null
   onChoose: (tokenId: string) => void
+  onRetry: () => void
   onContinue: () => void
 }) {
   return (
@@ -436,15 +482,19 @@ function PatternActivity({ round, choices, simpler, targetScale, answered, feedb
       </div>
       {simpler && <p className="mt-3 rounded-xl bg-sun-soft p-3 text-sun-deep">Look for the two items that repeat.</p>}
       <div className="mt-4 grid grid-cols-2 gap-3">
-        {choices.map((token) => <TokenButton key={token.id} token={token} scale={targetScale} disabled={answered} onClick={() => onChoose(token.id)} />)}
+        {choices.map((token) => {
+          const isWrong = status === 'incorrect' && token.id === selectedChoiceId
+          const isCorrect = status !== null && token.id === correctChoiceId
+          const state = isWrong ? 'wrong' : isCorrect ? 'correct' : 'default'
+          return <TokenButton key={token.id} token={token} scale={targetScale} state={state} disabled={answered} onClick={() => onChoose(token.id)} />
+        })}
       </div>
-      {feedback && <p role="status" className="mt-4 rounded-xl bg-mint-100 p-3 text-lg text-garden-900">{feedback}</p>}
-      {answered && <button type="button" onClick={onContinue} className="btn-primary mt-3 w-full">Continue together</button>}
+      <FeedbackPopup status={status} message={feedback} hint={hint ?? undefined} onRetry={onRetry} onContinue={onContinue} />
     </div>
   )
 }
 
-function SequenceActivity({ instruction, target, choices, simpler, targetScale, visible, selection, answered, feedback, onHide, onChoose, onUndo, onCheck, onContinue }: {
+function SequenceActivity({ instruction, target, choices, simpler, targetScale, visible, selection, answered, status, feedback, hint, onHide, onChoose, onUndo, onCheck, onRetry, onContinue }: {
   instruction: string
   target: GameToken[]
   choices: GameToken[]
@@ -453,11 +503,14 @@ function SequenceActivity({ instruction, target, choices, simpler, targetScale, 
   visible: boolean
   selection: string[]
   answered: boolean
+  status: FeedbackStatus
   feedback: string
+  hint: string | null
   onHide: () => void
   onChoose: (tokenId: string) => void
   onUndo: () => void
   onCheck: () => void
+  onRetry: () => void
   onContinue: () => void
 }) {
   const selectedTokens = selection.map((id) => choices.find((token) => token.id === id)).filter((token): token is GameToken => Boolean(token))
@@ -485,22 +538,26 @@ function SequenceActivity({ instruction, target, choices, simpler, targetScale, 
             <button type="button" disabled={!selection.length} onClick={onUndo} className="btn-soft w-full"><RotateCcw size={20} /> Remove last</button>
             <button type="button" disabled={selection.length !== target.length} onClick={onCheck} className="btn-primary w-full">Check sequence</button>
           </div>}
-          {feedback && <p role="status" className="mt-4 rounded-xl bg-mint-100 p-3 text-lg text-garden-900">{feedback}</p>}
-          {answered && <><div className="mt-3 flex flex-wrap justify-center gap-2" aria-label="Sequence to review">{target.map((token) => <TokenTile key={token.id} token={token} scale={targetScale} />)}</div><button type="button" onClick={onContinue} className="btn-primary mt-3 w-full">Continue together</button></>}
+          <FeedbackPopup status={status} message={feedback} hint={hint ?? undefined} onRetry={onRetry} onContinue={onContinue} />
         </>
       )}
     </div>
   )
 }
 
-function CategoryActivity({ round, choices, simpler, targetScale, answered, feedback, onChoose, onContinue }: {
+function CategoryActivity({ round, choices, simpler, targetScale, answered, status, selectedChoiceId, correctChoiceId, feedback, hint, onChoose, onRetry, onContinue }: {
   round: ReturnType<typeof buildCategoryRounds>[number]
   choices: GameToken[]
   simpler: boolean
   targetScale: number
   answered: boolean
+  status: FeedbackStatus
+  selectedChoiceId: string | null
+  correctChoiceId: string
   feedback: string
+  hint: string | null
   onChoose: (tokenId: string) => void
+  onRetry: () => void
   onContinue: () => void
 }) {
   return (
@@ -508,16 +565,21 @@ function CategoryActivity({ round, choices, simpler, targetScale, answered, feed
       <p className="text-lg">{round.instruction}</p>
       {simpler && <p className="mt-3 rounded-xl bg-sun-soft p-3 text-sun-deep">Notice how some items are alike. Choose the one that seems different.</p>}
       <div className="mt-4 grid grid-cols-2 gap-3">
-        {choices.map((token) => <TokenButton key={token.id} token={token} scale={targetScale} disabled={answered} onClick={() => onChoose(token.id)} />)}
+        {choices.map((token) => {
+          const isWrong = status === 'incorrect' && token.id === selectedChoiceId
+          const isCorrect = status !== null && token.id === correctChoiceId
+          const state = isWrong ? 'wrong' : isCorrect ? 'correct' : 'default'
+          return <TokenButton key={token.id} token={token} scale={targetScale} state={state} disabled={answered} onClick={() => onChoose(token.id)} />
+        })}
       </div>
-      {feedback && <p role="status" className="mt-4 rounded-xl bg-mint-100 p-3 text-lg text-garden-900">{feedback}</p>}
-      {answered && <button type="button" onClick={onContinue} className="btn-primary mt-3 w-full">Continue together</button>}
+      <FeedbackPopup status={status} message={feedback} hint={hint ?? undefined} onRetry={onRetry} onContinue={onContinue} />
     </div>
   )
 }
 
-function TokenButton({ token, scale = 1, disabled, onClick }: { token: GameToken; scale?: number; disabled?: boolean; onClick: () => void }) {
-  return <button type="button" disabled={disabled} onClick={onClick} style={{ minHeight: `${92 * scale}px` }} className={`rounded-2xl border-2 px-3 py-2 text-center font-semibold disabled:opacity-75 ${TOKEN_STYLE[token.category]}`}>
+function TokenButton({ token, scale = 1, disabled, state = 'default', onClick }: { token: GameToken; scale?: number; disabled?: boolean; state?: 'default' | 'wrong' | 'correct'; onClick: () => void }) {
+  const stateClass = state === 'wrong' ? choiceStateClass('wrong') : state === 'correct' ? choiceStateClass('correct') : choiceStateClass('default')
+  return <button type="button" disabled={disabled} onClick={onClick} style={{ minHeight: `${92 * scale}px` }} className={`rounded-2xl border-2 px-3 py-2 text-center font-semibold disabled:opacity-75 ${stateClass}`}>
     <TokenIcon glyph={token.glyph} />
     <span className="mt-1 block">{token.label}</span>
   </button>

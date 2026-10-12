@@ -19,14 +19,14 @@ export default function Garden() {
 
   const aquariumTone = mood === 'agitated' ? 'gentle ripples and soft movement' : mood === 'supportive' ? 'steady water and comforting motion' : 'calm water and easy drifting'
   const gardenLabel = state.experience === 'calming'
-    ? 'A peaceful garden with gentle rain and a flowing river'
+    ? 'A peaceful aquariumside scene with gentle rain and a flowing river'
     : state.experience === 'flourishing'
-      ? 'A bright garden with blooming flowers and butterflies'
-      : 'A quiet garden waiting to welcome you'
+      ? 'A bright memory aquarium with blooming flowers and gentle water movement'
+      : 'A quiet memory aquarium waiting to welcome you'
 
   return (
     <>
-      <PageHeader title="Your Memory Garden" />
+      <PageHeader title="Memory Aquarium" />
 
       <div className="mb-3 flex justify-end">
         <button
@@ -45,7 +45,6 @@ export default function Garden() {
       <section className={`garden-scene garden-${state.experience} rounded-card border-2 border-garden-700`} role="img" aria-label={gardenLabel}>
         <div className={`garden-sun garden-sun-${state.sunlight}`} aria-hidden>☀</div>
         {state.rain === 'gentle' && <div className="garden-rain" aria-hidden>{Array.from({ length: 7 }, (_, index) => <span key={index} />)}</div>}
-        {state.butterflies === 'gentle' && <><span className="garden-butterfly garden-butterfly-one" aria-hidden>🦋</span><span className="garden-butterfly garden-butterfly-two" aria-hidden>🦋</span></>}
         <div className={`garden-river garden-river-${state.river}`} aria-hidden />
         <div className="garden-blooms" aria-hidden>{blooms.map((flower, index) => <span key={`${flower}-${index}`} className={`garden-flower garden-flower-${state.animation}`}>{flower}</span>)}</div>
         <div className="garden-grass" aria-hidden>🌿　🌱　🌾　🌿　🌱　🌿</div>

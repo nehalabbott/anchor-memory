@@ -32,7 +32,7 @@ export default function Home() {
       <Link to="/garden" className="mt-5 flex items-center gap-4 rounded-card border-2 border-garden-500 bg-garden-50 p-4">
         <span className="w-16 h-16 rounded-2xl bg-garden-100 flex items-center justify-center text-garden-600" aria-hidden><Flower2 size={34} /></span>
         <span>
-          <span className="block font-display font-bold text-xl text-garden-700 leading-tight">Your Memory Garden</span>
+          <span className="block font-display font-bold text-xl text-garden-700 leading-tight">Memory Aquarium</span>
           <span className="block text-ink/70">A place to pause and reflect</span>
         </span>
       </Link>

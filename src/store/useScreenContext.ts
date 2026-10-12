@@ -56,7 +56,7 @@ function resolveRouteMeta(route: string) {
       gameDomain: GAME_DOMAIN_FOR[activeGame] ?? null,
     }
   }
-  if (normalized === '/garden') return { screen: 'Your Memory Garden', activeGame: null, gameDomain: null }
+  if (normalized === '/garden') return { screen: 'Memory Aquarium', activeGame: null, gameDomain: null }
   if (normalized === '/profile') return { screen: 'My Journey', activeGame: null, gameDomain: null }
   if (normalized === '/profile/assessment') return { screen: 'Cognitive Check-in', activeGame: null, gameDomain: null }
   if (normalized === '/memories') return { screen: 'Your Memories', activeGame: null, gameDomain: null }

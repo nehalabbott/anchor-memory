@@ -62,9 +62,6 @@
   .garden-flower { filter: drop-shadow(0 2px 1px rgba(23,49,58,.2)); }
   .garden-flower-lively { animation: bloom-sway 5s ease-in-out infinite alternate; }
   .garden-grass { @apply absolute bottom-0 w-full text-center text-2xl; }
-  .garden-butterfly { @apply absolute z-10 text-3xl; }
-  .garden-butterfly-one { left: 20%; top: 32%; animation: butterfly-drift 10s ease-in-out infinite alternate; }
-  .garden-butterfly-two { right: 23%; top: 48%; animation: butterfly-drift 13s ease-in-out -4s infinite alternate-reverse; }
   .garden-rain { @apply absolute inset-0 z-10 flex justify-around overflow-hidden; }
   .garden-rain span { width: 2px; height: 18px; background: rgba(77,137,158,.48); animation: gentle-rain 3s linear infinite; }
   .garden-rain span:nth-child(2n) { animation-delay: -1.2s; }
@@ -72,7 +69,6 @@
 }
 
 @keyframes bloom-sway { from { transform: translateY(0) rotate(-4deg); } to { transform: translateY(-5px) rotate(4deg); } }
-@keyframes butterfly-drift { from { transform: translate(0, 0); } to { transform: translate(20px, -12px); } }
 @keyframes gentle-rain { from { transform: translateY(-22px); opacity: .25; } to { transform: translateY(320px); opacity: .7; } }
 @keyframes river-breathe { 50% { transform: translateY(-3px); } }
 @keyframes koi-tail { from { transform: rotate(-14deg); } to { transform: rotate(14deg); } }

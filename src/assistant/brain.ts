@@ -96,14 +96,14 @@ export class RuleBasedBrain implements AssistantBrain {
         : `We can take this gently, ${name}. Would you like to rest or look at a photo with your caregiver?`
     }
     if (/gentle break|need a break|take a break/.test(t)) {
-      return `Of course, ${name}. There is no rush. Let's pause together; the garden will be here when you are ready.`
+      return `Of course, ${name}. There is no rush. Let's pause together; the Memory Aquarium will be here when you are ready.`
     }
 
     // 3. Navigation / feature help
     if (/game|play|practice|exercise/.test(t)) return `Let's play something gentle. Tap "Games" at the bottom, and pick whichever feels right today.`
     if (/photo|memor|family|picture/.test(t)) return `Your memories are kept safe in "Your Memories". We will use them in games so they feel personal to you.`
-    if (/garden|flower/.test(t)) return `Your Memory Garden responds to how a moment felt. There is no right or wrong way to spend time there.`
-    if (/break|tired|rest|calm|relax/.test(t)) return `Of course. Let's take a slow breath together. In through the nose... and out. The garden will be here when you are ready.`
+    if (/garden|flower/.test(t)) return `Memory Aquarium responds to how a moment felt. There is no right or wrong way to spend time there.`
+    if (/break|tired|rest|calm|relax/.test(t)) return `Of course. Let's take a slow breath together. In through the nose... and out. The Memory Aquarium will be here when you are ready.`
     if (/hello|hi\b|hey|good (morning|afternoon|evening)/.test(t)) return `Hello ${name}. I'm Mo. It is lovely to hear from you. How would you like to spend a little time today?`
     if (/thank/.test(t)) return `You are very welcome, ${name}.`
     if (/what can you do|help\b|how do i/.test(t)) {

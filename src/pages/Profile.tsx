@@ -58,12 +58,12 @@ export default function Profile() {
         </div>
       </section>
 
-      <Link to="/garden" aria-label={`Recent Memory Garden. ${gardenPreview}`} className="card mt-3 flex min-h-[88px] items-center gap-4 p-4">
+      <Link to="/garden" aria-label={`Recent Memory Aquarium. ${gardenPreview}`} className="card mt-3 flex min-h-[88px] items-center gap-4 p-4">
         <span className="flex h-14 w-14 shrink-0 items-center justify-center rounded-full bg-garden-100 text-garden-700" aria-hidden><Flower2 size={28} /></span>
         <span className="min-w-0 flex-1">
-          <span className="block font-display text-lg font-bold">Recent Memory Garden</span>
-          <span className="block text-ink/75">Take a quiet look at your garden.</span>
-          <span className="mt-1 block font-semibold text-garden-900">Open Garden</span>
+          <span className="block font-display text-lg font-bold">Recent Memory Aquarium</span>
+          <span className="block text-ink/75">Take a quiet look at your aquarium.</span>
+          <span className="mt-1 block font-semibold text-garden-900">Open Memory Aquarium</span>
         </span>
         <ChevronRight size={24} aria-hidden />
       </Link>

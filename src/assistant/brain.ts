@@ -1,4 +1,5 @@
-import type { AssistantContext, MemoryItem } from '@/lib/types'
+import type { AssistantContext, ChatMessage, MemoryItem } from '@/lib/types'
+import { BackendApiError, requestAssistant } from '@/lib/apiClient'
 
 /**
  * The assistant "brain" is an interface so the UI never cares where answers come from.
@@ -6,7 +7,12 @@ import type { AssistantContext, MemoryItem } from '@/lib/types'
  *   Part 3:        RemoteBrain     - POST /api/assistant (Whisper + LLM, see server/index.js)
  */
 export interface AssistantBrain {
-  reply(input: string, ctx: AssistantContext, memories: MemoryItem[]): Promise<string>
+  reply(
+    input: string,
+    ctx: AssistantContext,
+    memories: MemoryItem[],
+    history?: Pick<ChatMessage, 'role' | 'text'>[],
+  ): Promise<string>
 }
 
 /** Phrases from the Lab 4 report that signal the user may need help (Gap 3). */
@@ -21,12 +27,36 @@ export function detectStruggle(text: string): string | null {
   return STRUGGLE_PHRASES.find((p) => t.includes(p)) ?? null
 }
 
+/** Orientation questions ("who am I", "what am I doing", "where am I") are grounding requests,
+ *  not struggle phrases, so they're matched and answered before the struggle branch. */
+const IDENTITY_PATTERNS = [/\bwho am i\b/, /\bwho'?s? this\b.*\bme\b/, /\bwhat'?s my name\b/, /\bdo you know who i am\b/]
+const ACTIVITY_PATTERNS = [/\bwhat am i doing\b/, /\bwhere am i\b/, /\bwhat is (this|going on)\b/, /\bwhat'?s happening\b/]
+
+function detectIdentityQuestion(t: string): 'who' | 'what' | null {
+  if (IDENTITY_PATTERNS.some((p) => p.test(t))) return 'who'
+  if (ACTIVITY_PATTERNS.some((p) => p.test(t))) return 'what'
+  return null
+}
+
 const SAFETY_NOTE = 'I offer gentle wellbeing guidance, not medical advice.'
 
 export class RuleBasedBrain implements AssistantBrain {
   async reply(input: string, ctx: AssistantContext, memories: MemoryItem[]): Promise<string> {
     const t = input.toLowerCase().trim()
     const name = ctx.userName
+    const details = (ctx.personalDetails ?? []).filter((d) => d.trim())
+
+    // 0. Orientation questions ("who am I", "what am I doing") answer directly and gently,
+    //    grounded only in facts the caregiver actually entered, never invented.
+    const identity = detectIdentityQuestion(t)
+    if (identity === 'who') {
+      return details.length
+        ? `You are ${name}. ${details.join(' ')}`
+        : `You are ${name}. That's all I have written down about you right now, but I'm here with you.`
+    }
+    if (identity === 'what') {
+      return `Right now you're with me on the "${ctx.screenLabel}" screen, just spending a quiet moment together. There is nothing you need to do. Would you like to look at a memory, play something gentle, or just rest here?`
+    }
 
     // 1. Struggling: reassure first, never correct harshly (HCI: forgiving interaction)
     if (detectStruggle(t)) {
@@ -85,24 +115,47 @@ export class RuleBasedBrain implements AssistantBrain {
   }
 }
 
-/** Part 3 hook: swap RuleBasedBrain for this once the server has a Whisper + LLM key. */
 export class RemoteBrain implements AssistantBrain {
-  constructor(private fallback: AssistantBrain = new RuleBasedBrain()) {}
-  async reply(input: string, ctx: AssistantContext, memories: MemoryItem[]): Promise<string> {
+  async reply(
+    input: string,
+    ctx: AssistantContext,
+    memories: MemoryItem[],
+    history: Pick<ChatMessage, 'role' | 'text'>[] = [],
+  ): Promise<string> {
     try {
-      const res = await fetch('/api/assistant', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ input, ctx, memories }),
-      })
-      if (!res.ok) throw new Error(String(res.status))
-      const data = (await res.json()) as { reply: string }
-      return data.reply
-    } catch {
-      return this.fallback.reply(input, ctx, memories) // always degrade gracefully
+      return await requestAssistant({ input, ctx, memories, history: history.slice(-8) }, AbortSignal.timeout(25_000))
+    } catch (error) {
+      if (error instanceof BackendApiError) {
+        if (error.code === 'request_timeout' || error.code === 'groq_timeout') return `Mo is taking too long to respond, ${ctx.userName}. Please try again shortly.`
+        if (error.code === 'backend_unavailable' || error.code === 'groq_network_error') return `Mo cannot reach the service just now, ${ctx.userName}. Please try again in a moment.`
+        if (error.code === 'groq_rate_limited') return `Mo is busy right now, ${ctx.userName}. Please try again shortly.`
+        if (error.code === 'authentication_required' || error.code === 'invalid_session') return 'Please sign in again before talking with Mo.'
+        return error.message
+      }
+      return `Mo could not respond just now, ${ctx.userName}. Please try again in a moment.`
     }
   }
 }
 
-// Part 1 uses the offline brain. Change this single line in Part 3.
-export const brain: AssistantBrain = new RuleBasedBrain()
+export const brain: AssistantBrain = new RemoteBrain()
+
+/** How long Mo waits with no reply before checking in (ms). Two escalating steps, never more. */
+export const NUDGE_DELAY_MS = 20_000
+export const HINT_DELAY_MS = 40_000
+
+/** First, gentle check-in when the person has gone quiet. Never implies something is wrong with them. */
+export function silenceCheckIn(name: string): string {
+  const variants = [
+    `Still here with you, ${name}. No rush at all, take your time.`,
+    `I'm right here, ${name}. Is everything okay, or would a hint help?`,
+    `Take all the time you need, ${name}. I'm not going anywhere.`,
+  ]
+  return variants[Math.floor(Math.random() * variants.length)]
+}
+
+/** Second escalation: a concrete, specific hint drawn from the person's own memories, never generic. */
+export function silenceHint(name: string, memories: MemoryItem[]): string {
+  const memory = memories.find((m) => m.story.trim())
+  if (memory) return `${name}, would this help? ${memory.name} — ${memory.story}`
+  return `${name}, would you like to take a gentle break, or ask your caregiver to add a memory we can look at together?`
+}

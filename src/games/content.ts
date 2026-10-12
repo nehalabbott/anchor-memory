@@ -82,7 +82,7 @@ export function buildFacePrompts(memories: MemoryItem[]): FacePrompt[] {
   return people.map((memory, index) => {
     const otherPeople = people.filter((person) => person.id !== memory.id)
     const offset = otherPeople.length ? index % otherPeople.length : 0
-    const distractors = [...otherPeople.slice(offset), ...otherPeople.slice(0, offset)].slice(0, 2)
+    const distractors = [...otherPeople.slice(offset), ...otherPeople.slice(0, offset)]
     return {
       id: `faces-${memory.id}`,
       memory,
@@ -149,7 +149,6 @@ export function buildPatternRounds(memories: MemoryItem[]): PatternRound[] {
   const second = secondCandidate.glyph === first.glyph
     ? GENERIC_TOKENS.find((token) => token.glyph !== first.glyph) ?? GENERIC_TOKENS[1]
     : secondCandidate
-  const distractor = GENERIC_TOKENS.find((token) => token.id !== first.id && token.id !== second.id && token.glyph !== first.glyph && token.glyph !== second.glyph) ?? GENERIC_TOKENS[2]
   const title = personalPair.length ? `${first.category === 'garden' ? 'Garden' : first.category === 'fruit' ? 'Fruit' : first.category === 'kitchen' ? 'Familiar object' : 'Familiar'} pattern` : 'Shape pattern'
   const sourceMemoryIds = unique(personalPair.map((token) => token.memoryId ?? ''))
   const patterns = [
@@ -163,7 +162,11 @@ export function buildPatternRounds(memories: MemoryItem[]): PatternRound[] {
     instruction: 'Look at the pattern. Which item comes next?',
     pattern: values,
     answer,
-    choices: rotate([answer, answer.id === first.id ? second : first, distractor], index),
+    choices: rotate([
+      answer,
+      answer.id === first.id ? second : first,
+      ...GENERIC_TOKENS.filter((token) => token.id !== answer.id && token.id !== first.id && token.id !== second.id && token.glyph !== answer.glyph),
+    ].filter((token, tokenIndex, tokens) => tokens.findIndex((candidate) => candidate.id === token.id) === tokenIndex), index),
     clue: 'Notice the items that repeat, and look at what follows the pair.',
     sourceMemoryIds,
   }))
@@ -175,14 +178,19 @@ function sequencePool(memories: MemoryItem[]): GameToken[] {
   return pool.slice(0, 6)
 }
 
-export function buildSequenceRounds(memories: MemoryItem[]): SequenceRound[] {
+export function buildSequenceRounds(memories: MemoryItem[], maxSequenceLength = 4): SequenceRound[] {
   const pool = sequencePool(memories)
-  const sequences = [pool.slice(0, 3), [pool[2], pool[0], pool[3], pool[1]], [pool[1], pool[3], pool[0]]]
+  const length = Math.max(2, Math.min(pool.length, maxSequenceLength))
+  const sequences = [
+    pool.slice(0, Math.min(3, length)),
+    [pool[2], pool[0], pool[3], pool[1], pool[4], pool[5]].filter((token): token is GameToken => Boolean(token)).slice(0, length),
+    [pool[1], pool[3], pool[0], pool[4], pool[2], pool[5]].filter((token): token is GameToken => Boolean(token)).slice(0, length),
+  ]
   return sequences.map((items, index) => ({
     id: `sequence-${index + 1}`,
     title: 'A familiar sequence',
     instruction: 'Study the items, hide them, then build the same order.',
-    items: items.filter((item): item is GameToken => Boolean(item)),
+    items,
     choices: pool,
     sourceMemoryIds: unique(items.map((token) => token?.memoryId ?? '')),
   }))

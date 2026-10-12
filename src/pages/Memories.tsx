@@ -6,6 +6,7 @@ import { DEMO_MEMORIES, DEMO_PERSON } from '@/demo/demoData'
 import { mediaRepository } from '@/lib/mediaRepository'
 import type { MediaReference, MemoryEvent, MemoryItem, MemoryKind, Relationship } from '@/lib/types'
 import { useApp } from '@/store/useApp'
+import { editMemory, removeMemory as removeMemoryRecord, saveMemory as saveMemoryRecord, savePersonDetails } from '@/lib/appDataService'
 
 const KINDS: { value: MemoryKind; label: string }[] = [
   { value: 'person', label: 'Person' }, { value: 'story', label: 'Story' }, { value: 'place', label: 'Place' },
@@ -39,7 +40,7 @@ function draftFrom(memory?: MemoryItem): MemoryDraft {
 }
 
 export default function Memories() {
-  const { memories, supportedPerson, setSupportedPerson, addMemory, updateMemory, deleteMemory, replaceMemories } = useApp()
+  const { memories, supportedPerson } = useApp()
   const [editing, setEditing] = useState<MemoryItem | null>(null)
   const [adding, setAdding] = useState(false)
   const [personName, setPersonName] = useState(supportedPerson.name)
@@ -48,15 +49,23 @@ export default function Memories() {
   const [deleteTarget, setDeleteTarget] = useState<string | null>(null)
   const [notice, setNotice] = useState('')
 
-  function savePerson(event: FormEvent) {
+  async function savePerson(event: FormEvent) {
     event.preventDefault()
     const name = personName.trim()
     if (!name) return
-    setSupportedPerson({ name, personalDetails: listFromText(personalDetails) })
-    setPersonSaved(true)
+    try {
+      const result = await savePersonDetails({ name, personalDetails: listFromText(personalDetails) })
+      setPersonName(result.value.name)
+      setPersonalDetails(result.value.personalDetails.join('\n'))
+      setPersonSaved(true)
+      setNotice(result.persistence === 'server' ? 'Person details saved.' : 'Person details are saved on this device and will sync when connected.')
+    } catch {
+      setPersonSaved(false)
+      setNotice('Person details could not be saved. Your existing details are unchanged.')
+    }
   }
 
-  function saveMemory(draft: MemoryDraft, photo?: MediaReference, voice?: MediaReference) {
+  async function saveMemory(draft: MemoryDraft, photo?: MediaReference, voice?: MediaReference): Promise<void> {
     const events: MemoryEvent[] = draft.events.split('\n').map((title) => title.trim()).filter(Boolean).map((title, index) => ({
       id: newId(), title, sequenceOrder: index + 1,
     }))
@@ -74,33 +83,45 @@ export default function Memories() {
       voice: voice ?? editing?.voice,
     }
     if (editing) {
-      updateMemory(editing.id, value)
-      if (photo && editing.photo) void mediaRepository.remove(editing.photo).catch(() => undefined)
-      if (voice && editing.voice) void mediaRepository.remove(editing.voice).catch(() => undefined)
-    } else addMemory(value)
+      const result = await editMemory(editing.id, value)
+      if (result.persistence === 'server') {
+        if (photo && editing.photo) void mediaRepository.remove(editing.photo).catch(() => undefined)
+        if (voice && editing.voice) void mediaRepository.remove(editing.voice).catch(() => undefined)
+      }
+      setNotice(result.persistence === 'server' ? 'Memory saved to Anchor.' : 'Memory is saved on this device and will sync when connected.')
+    } else {
+      const result = await saveMemoryRecord(value)
+      setNotice(result.persistence === 'server' ? 'Memory saved. It can now shape a personal activity.' : 'Memory is saved on this device and will sync when connected.')
+    }
     setEditing(null)
     setAdding(false)
-    setNotice('Memory saved. It can now shape a personal activity.')
   }
 
-  function removeMemory(memory: MemoryItem) {
-    deleteMemory(memory.id)
-    if (memory.photo) void mediaRepository.remove(memory.photo).catch(() => undefined)
-    if (memory.voice) void mediaRepository.remove(memory.voice).catch(() => undefined)
-    setDeleteTarget(null)
-    setEditing(null)
-    setNotice('Memory removed.')
+  async function removeMemory(memory: MemoryItem) {
+    try {
+      await removeMemoryRecord(memory.id)
+      if (memory.photo) void mediaRepository.remove(memory.photo).catch(() => undefined)
+      if (memory.voice) void mediaRepository.remove(memory.voice).catch(() => undefined)
+      setDeleteTarget(null)
+      setEditing(null)
+      setNotice('Memory removed.')
+    } catch {
+      setNotice('Memory could not be removed. Your saved copy is unchanged.')
+    }
   }
 
   async function loadDemo() {
-    await Promise.all(memories.flatMap((memory) => [memory.photo, memory.voice].filter((media): media is MediaReference => Boolean(media)).map((media) => mediaRepository.remove(media).catch(() => undefined))))
-    setSupportedPerson({ name: DEMO_PERSON.name, personalDetails: DEMO_PERSON.personalDetails })
-    setPersonName(DEMO_PERSON.name)
-    setPersonalDetails(DEMO_PERSON.personalDetails.join('\n'))
-    replaceMemories(DEMO_MEMORIES)
-    setEditing(null)
-    setAdding(false)
-    setNotice('Fictional demo memories loaded. They are sample content, not real patient information.')
+    try {
+      const personResult = await savePersonDetails({ name: DEMO_PERSON.name, personalDetails: DEMO_PERSON.personalDetails })
+      setPersonName(DEMO_PERSON.name)
+      setPersonalDetails(DEMO_PERSON.personalDetails.join('\n'))
+      for (const memory of DEMO_MEMORIES) await saveMemoryRecord(memory)
+      setEditing(null)
+      setAdding(false)
+      setNotice(`Fictional demo memories loaded${personResult.persistence === 'device' ? ' on this device; they will sync when connected' : ''}. They are sample content, not real patient information.`)
+    } catch {
+      setNotice('Demo memories could not be fully loaded. Existing memories were kept.')
+    }
   }
 
   return (
@@ -183,7 +204,7 @@ export default function Memories() {
   )
 }
 
-function MemoryForm({ memory, onCancel, onSave }: { memory?: MemoryItem; onCancel: () => void; onSave: (draft: MemoryDraft, photo?: MediaReference, voice?: MediaReference) => void }) {
+function MemoryForm({ memory, onCancel, onSave }: { memory?: MemoryItem; onCancel: () => void; onSave: (draft: MemoryDraft, photo?: MediaReference, voice?: MediaReference) => Promise<void> }) {
   const [draft, setDraft] = useState(() => draftFrom(memory))
   const [photoFile, setPhotoFile] = useState<File | null>(null)
   const [voiceFile, setVoiceFile] = useState<File | null>(null)
@@ -201,9 +222,9 @@ function MemoryForm({ memory, onCancel, onSave }: { memory?: MemoryItem; onCance
       }
       const photo = photoFile ? await mediaRepository.save(photoFile, 'photo', draft.name.trim()) : undefined
       const voice = voiceFile ? await mediaRepository.save(voiceFile, 'voice', draft.name.trim()) : undefined
-      onSave(draft, photo, voice)
+      await onSave(draft, photo, voice)
     } catch {
-      setError('Media could not be saved on this device. Try a smaller file or continue without it.')
+      setError('Memory could not be saved. Existing saved memories were kept; please try again.')
     } finally {
       setSaving(false)
     }

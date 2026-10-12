@@ -1,9 +1,9 @@
-import { describe, it, expect, beforeEach } from 'vitest'
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
 import { render, screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { MemoryRouter } from 'react-router-dom'
 import App from '@/App'
-import { RuleBasedBrain, detectStruggle } from './brain'
+import { RemoteBrain, RuleBasedBrain, detectStruggle } from './brain'
 import { useApp } from '@/store/useApp'
 
 const ctx = { route: '/games', screenLabel: 'Choose an Activity', userName: 'Margaret', state: 'normal' as const }
@@ -22,10 +22,47 @@ describe('RuleBasedBrain', () => {
     expect(detectStruggle("I can't remember")).toBeTruthy()
     expect(detectStruggle('lovely weather')).toBeNull()
   })
+  it('answers "who am I" using the supported person\'s own details, never invented', async () => {
+    const withDetails = { ...ctx, personalDetails: ['You live in Bangalore with your daughter Priya.'] }
+    expect(await b.reply('who am I?', withDetails, mems)).toBe("You are Margaret. You live in Bangalore with your daughter Priya.")
+    expect(await b.reply('Do you know who I am', withDetails, mems)).toMatch(/You are Margaret/)
+    const noDetails = { ...ctx, personalDetails: [] }
+    expect(await b.reply('who am i', noDetails, mems)).toMatch(/You are Margaret/)
+    expect(await b.reply('who am i', noDetails, mems)).not.toMatch(/undefined/)
+  })
+  it('answers "what am I doing" with the current screen, not a generic deflection', async () => {
+    const r = await b.reply('what am I doing?', ctx, mems)
+    expect(r).toMatch(/Choose an Activity/)
+    expect(await b.reply('where am I', ctx, mems)).toMatch(/Choose an Activity/)
+  })
+  it('does not let identity questions fall into the struggle branch', async () => {
+    // "who am i" contains no listed struggle phrase, but a naive `/who/` match elsewhere could misfire
+    const r = await b.reply('who am i', ctx, mems)
+    expect(r).not.toMatch(/That's okay/)
+    expect(r).not.toMatch(/no rush/)
+  })
+})
+
+describe('RemoteBrain', () => {
+  it('keeps safe upstream error categories visible to the person', async () => {
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue(new Response(JSON.stringify({
+      error: 'Mo is busy right now. Please try again shortly.', code: 'groq_rate_limited',
+    }), { status: 503, headers: { 'Content-Type': 'application/json' } })))
+    const reply = await new RemoteBrain().reply('hello', ctx, mems)
+    expect(reply).toMatch(/Mo is busy right now/)
+    expect(reply).not.toMatch(/trouble connecting/)
+  })
+
+  it('gives a distinct timeout message', async () => {
+    vi.stubGlobal('fetch', vi.fn(async () => { throw Object.assign(new Error('aborted'), { name: 'TimeoutError' }) }))
+    const reply = await new RemoteBrain().reply('hello', ctx, mems)
+    expect(reply).toMatch(/taking too long to respond/)
+  })
 })
 
 describe('App shell + assistant toolbar', () => {
   beforeEach(() => { localStorage.clear(); useApp.setState({ chat: [], assistantOpen: false, events: [] }) })
+  afterEach(() => { vi.unstubAllGlobals() })
   const mount = (path = '/') => render(<MemoryRouter initialEntries={[path]}><App /></MemoryRouter>)
 
   it('shows the assistant toolbar and bottom nav on every screen', async () => {
@@ -38,12 +75,21 @@ describe('App shell + assistant toolbar', () => {
   })
 
   it('opens the panel, greets by name, and replies to a typed message', async () => {
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue({
+      ok: true,
+      json: async () => ({ reply: "Let's play something gentle. Which game sounds nice?" }),
+    }))
     const u = userEvent.setup(); mount('/games')
     await u.click(screen.getByRole('button', { name: 'Talk to Assistant' }))
     expect(await screen.findByRole('dialog', { name: 'Assistant' })).toBeInTheDocument()
     expect(screen.getByText(/Hi Margaret, I'm Mo/)).toBeInTheDocument()
     await u.type(screen.getByLabelText('Message to Mo'), 'I want to play a game{enter}')
     await waitFor(() => expect(screen.getByText(/Let's play something gentle/)).toBeInTheDocument())
+    const requestBody = vi.mocked(fetch).mock.calls[0]![1]?.body
+    expect(typeof requestBody).toBe('string')
+    const payload = JSON.parse(requestBody as string)
+    expect(payload.history).toEqual(expect.arrayContaining([expect.objectContaining({ role: 'assistant' })]))
+    expect(payload.memories).toHaveLength(useApp.getState().memories.length)
   })
 
   it('logs a help_request event when "Give me a clue" is tapped (feeds Part 3)', async () => {

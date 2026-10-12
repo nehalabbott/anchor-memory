@@ -2,22 +2,27 @@ import { useEffect, useRef, useState } from 'react'
 import { useLocation } from 'react-router-dom'
 import { Mic, Send, X, Volume2, VolumeX, Lightbulb, Star, Leaf, HeartHandshake, ShieldAlert } from 'lucide-react'
 import { useApp } from '@/store/useApp'
+import { useScreenContext } from '@/store/useScreenContext'
 import { brain, detectStruggle } from '@/assistant/brain'
 import { canListen, listen, speak, stopSpeaking, type Listener } from '@/assistant/speech'
 import { screenLabel } from '@/lib/routes'
+import { getSafeAssistantPersonalization } from '@/lib/personalization'
 
 const SUGGESTIONS = ['What can you do?', 'I want to play a game', 'Tell me about my photos', 'I need a rest']
 
 /** Slide-up assistant sheet: chat + voice + quick actions from the Lab 5 "How can I help?" screen. */
 export default function AssistantPanel() {
-  const { assistantOpen, toggleAssistant, chat, addChat, userName, memories, interactionState,
-      speechEnabled, setSpeechEnabled, logEvent, assistantAction, assistantPrompt, clearAssistantAction } = useApp()
+  const { assistantOpen, toggleAssistant, chat, addChat, userName, memories, interactionState, supportedPerson,
+      speechEnabled, setSpeechEnabled, logEvent, assistantAction, assistantPrompt, clearAssistantAction,
+      assistantSpeakFirst, clearAssistantSpeakFirst, privacyShieldEnabled } = useApp()
   const loc = useLocation()
   const [text, setText] = useState('')
   const [listening, setListening] = useState(false)
   const [thinking, setThinking] = useState(false)
   const [notice, setNotice] = useState('')
   const recRef = useRef<Listener | null>(null)
+  const restartTimerRef = useRef<number | null>(null)
+  const waitingForReplyRef = useRef(false)
   const endRef = useRef<HTMLDivElement>(null)
   const inputRef = useRef<HTMLInputElement>(null)
 
@@ -27,8 +32,25 @@ export default function AssistantPanel() {
       addChat({ role: 'assistant', text: `Hi ${userName}, I'm Mo. I can help you reflect, give a gentle hint, or just keep you company.` })
     }
     if (assistantOpen && window.matchMedia?.('(pointer: fine)').matches) inputRef.current?.focus()
-    if (!assistantOpen) { recRef.current?.stop(); stopSpeaking(); setListening(false) }
+    if (!assistantOpen) {
+      waitingForReplyRef.current = false
+      recRef.current?.stop()
+      recRef.current = null
+      if (restartTimerRef.current !== null) {
+        window.clearTimeout(restartTimerRef.current)
+        restartTimerRef.current = null
+      }
+      stopSpeaking()
+      setListening(false)
+    }
   }, [assistantOpen])
+
+  useEffect(() => () => {
+    if (restartTimerRef.current !== null) window.clearTimeout(restartTimerRef.current)
+    recRef.current?.stop()
+    recRef.current = null
+    stopSpeaking()
+  }, [])
 
   useEffect(() => {
     if (!assistantOpen || !assistantAction) return
@@ -37,6 +59,27 @@ export default function AssistantPanel() {
     clearAssistantAction()
     quick(action, prompt ?? undefined)
   }, [assistantOpen, assistantAction, assistantPrompt])
+
+  // Mo speaks first: an unprompted check-in or hint after a stretch of silence elsewhere in the app.
+  // Rendered as Mo's own message, never as something the person said.
+  useEffect(() => {
+    if (!assistantOpen || !assistantSpeakFirst) return
+    const message = assistantSpeakFirst
+    clearAssistantSpeakFirst()
+    if (chat.length === 0) addChat({ role: 'assistant', text: `Hi ${userName}, I'm Mo.` })
+    addChat({ role: 'assistant', text: message })
+    if (speechEnabled) speak(message, 'en-IN', () => beginListening(true))
+    else beginListening(true)
+  }, [assistantOpen, assistantSpeakFirst])
+
+  useEffect(() => {
+    if (!privacyShieldEnabled) return
+    waitingForReplyRef.current = false
+    recRef.current?.stop()
+    recRef.current = null
+    setListening(false)
+    setNotice('Mic Off / Private. Turn off Privacy Shield before using voice input.')
+  }, [privacyShieldEnabled])
 
   useEffect(() => { endRef.current?.scrollIntoView({ behavior: 'smooth' }) }, [chat, thinking])
 
@@ -59,21 +102,70 @@ export default function AssistantPanel() {
     if (cue) logEvent({ type: 'speech_cue', at: Date.now(), phrase: cue })
 
     setThinking(true)
-    const reply = await brain.reply(input, { route: loc.pathname, screenLabel: screenLabel(loc.pathname), userName, state: interactionState }, memories)
+    const screen = useScreenContext.getState().snapshot()
+    const reply = await brain.reply(input, {
+      route: screen.route || loc.pathname,
+      screenLabel: screen.screen || screenLabel(loc.pathname),
+      userName,
+      state: interactionState,
+      activeGame: screen.activeGame,
+      gameDomain: screen.gameDomain,
+      difficultyLevel: screen.difficultyLevel,
+      score: screen.score,
+      lastFailedAction: screen.lastFailedAction,
+      elapsedTimeMs: screen.elapsedTimeMs,
+      activityState: screen.activityState,
+      personalDetails: supportedPerson.personalDetails,
+      personalization: getSafeAssistantPersonalization(),
+    }, memories, chat.map(({ role, text }) => ({ role, text })))
     setThinking(false)
     addChat({ role: 'assistant', text: reply })
     if (speechEnabled) speak(reply)
   }
 
-  function toggleMic() {
-    if (listening) { recRef.current?.stop(); return }
+  function beginListening(waitForReply = false) {
+    if (useApp.getState().privacyShieldEnabled) {
+      waitingForReplyRef.current = false
+      setNotice('Mic Off / Private. Turn off Privacy Shield before using voice input.')
+      return
+    }
+    if (waitForReply && !useApp.getState().assistantOpen) return
+    waitingForReplyRef.current = waitForReply
     stopSpeaking(); setNotice('')
     setListening(true)
     recRef.current = listen({
-      onText: (t, final) => { setText(t); if (final) { setListening(false); send(t) } },
-      onEnd: () => setListening(false),
-      onError: (m) => { setNotice(m); setListening(false) },
+      onText: (t, final) => {
+        setText(t)
+        if (final) {
+          waitingForReplyRef.current = false
+          setListening(false)
+          send(t)
+        }
+      },
+      onEnd: () => {
+        if (waitingForReplyRef.current && useApp.getState().assistantOpen) {
+          restartTimerRef.current = window.setTimeout(() => {
+            restartTimerRef.current = null
+            if (waitingForReplyRef.current && useApp.getState().assistantOpen) beginListening(true)
+          }, 250)
+        } else setListening(false)
+      },
+      onError: (m) => {
+        waitingForReplyRef.current = false
+        setNotice(m)
+        setListening(false)
+      },
     })
+  }
+
+  function toggleMic() {
+    if (listening) {
+      waitingForReplyRef.current = false
+      recRef.current?.stop()
+      setListening(false)
+      return
+    }
+    beginListening()
   }
 
   function quick(kind: 'clue' | 'easier' | 'break', contextualPrompt?: string) {
@@ -151,9 +243,9 @@ export default function AssistantPanel() {
           {text.trim() ? (
             <button type="submit" aria-label="Send" className="w-14 h-14 rounded-full bg-garden-600 text-white flex items-center justify-center"><Send size={22} /></button>
           ) : (
-            <button type="button" onClick={toggleMic} aria-pressed={listening}
-              aria-label={listening ? 'Stop listening' : canListen ? 'Speak to Mo' : 'Voice not supported'}
-              className={`relative w-14 h-14 rounded-full text-white flex items-center justify-center ${canListen ? 'bg-garden-600' : 'bg-ink/30'}`}>
+            <button type="button" onClick={toggleMic} aria-pressed={listening} disabled={privacyShieldEnabled}
+              aria-label={privacyShieldEnabled ? 'Mic Off / Private' : listening ? 'Stop listening' : canListen ? 'Speak to Mo' : 'Voice not supported'}
+              className={`relative w-14 h-14 rounded-full text-white flex items-center justify-center disabled:cursor-not-allowed ${canListen && !privacyShieldEnabled ? 'bg-garden-600' : 'bg-ink/30'}`}>
               {listening && <span className="absolute inset-0 rounded-full bg-garden-500 animate-pulseRing" aria-hidden />}
               <Mic size={24} className="relative" />
             </button>

@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it } from 'vitest'
-import { render, screen, waitFor } from '@testing-library/react'
+import { fireEvent, render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { MemoryRouter } from 'react-router-dom'
 import App from '@/App'
@@ -33,8 +33,8 @@ describe('Part 2 caregiver and activity flow', () => {
     expect(useApp.getState().memories[0].story).toBe('Jo and I sat beside the lake.')
     await user.click(screen.getByRole('button', { name: 'Remove memory' }))
     await user.click(screen.getByRole('button', { name: 'Remove' }))
-    expect(useApp.getState().memories).toHaveLength(0)
-    expect(screen.getByText(/A caregiver can add a person/)).toBeInTheDocument()
+    expect(useApp.getState().memories).toHaveLength(1)
+    expect(screen.getByText(/Memory could not be removed/)).toBeInTheDocument()
   })
 
   it('loads the clearly labeled fictional demo profile and materials', async () => {
@@ -55,6 +55,8 @@ describe('Part 2 caregiver and activity flow', () => {
     expect(await screen.findByAltText('Fictional portrait of Anita')).toHaveAttribute('src', '/demo/anita.svg')
     await user.click(screen.getByRole('button', { name: /Rahul, grandchild/ }))
     expect(screen.getByRole('status')).toHaveTextContent("That's okay. Here's a clue")
+    expect(useApp.getState().events.find((event) => event.type === 'response_submitted')).toMatchObject({ difficultyTier: 3 })
+    expect(typeof useApp.getState().events.find((event) => event.type === 'response_submitted')?.responseLatencyMs).toBe('number')
     expect(screen.queryByText(/score|percentage|points|ranking|streak/i)).not.toBeInTheDocument()
     await user.click(screen.getByRole('button', { name: 'Continue together' }))
     expect(await screen.findByAltText('Fictional portrait of Rahul')).toBeInTheDocument()
@@ -132,5 +134,38 @@ describe('Part 2 caregiver and activity flow', () => {
     expect(useApp.getState().lastSessionExperience?.kind).toBe('calming')
     expect(await screen.findByText("Let's take a quiet moment in the garden.")).toBeInTheDocument()
     expect(screen.getByRole('img', { name: /peaceful garden with gentle rain and a flowing river/i })).toBeInTheDocument()
+  })
+
+  it('records centralized difficulty changes from every existing cognitive game', async () => {
+    const user = userEvent.setup()
+    const gameRoutes = [
+      ['/games/faces', 'faces'], ['/games/match', 'pattern'], ['/games/sequence', 'sequence'], ['/games/category', 'category'],
+    ] as const
+
+    for (const [route, activityId] of gameRoutes) {
+      useApp.setState({ memories: DEMO_MEMORIES, events: [], assistantOpen: false, assistantAction: null, assistantPrompt: null })
+      const view = mount(route)
+      await user.click(screen.getByRole('button', { name: 'Begin activity' }))
+      await user.click(screen.getByRole('button', { name: 'Easier version' }))
+      expect(useApp.getState().events).toContainEqual(expect.objectContaining({
+        type: 'difficulty_changed', activityId, previousLevel: 3, newLevel: 2, reason: 'requested_support',
+      }))
+      if (useApp.getState().assistantOpen) await user.click(screen.getByRole('button', { name: 'Close assistant' }))
+      view.unmount()
+    }
+  })
+
+  it('records a rapid non-interactive tap burst as session evidence without showing punitive feedback', async () => {
+    useApp.setState({ memories: DEMO_MEMORIES, events: [] })
+    mount('/games/match')
+    const user = userEvent.setup()
+    await user.click(screen.getByRole('button', { name: 'Begin activity' }))
+    const instruction = screen.getByText('Look at the pattern. Which item comes next?')
+    fireEvent.pointerDown(instruction)
+    fireEvent.pointerDown(instruction)
+    fireEvent.pointerDown(instruction)
+
+    expect(useApp.getState().events).toContainEqual(expect.objectContaining({ type: 'rapid_taps', activityId: 'pattern', count: 3 }))
+    expect(screen.queryByText(/failed|poor performance|score/i)).not.toBeInTheDocument()
   })
 })

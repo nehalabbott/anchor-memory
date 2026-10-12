@@ -8,6 +8,33 @@
     @apply bg-mist text-ink font-body text-base antialiased;
     margin: 0;
   }
+  body[data-theme='calming-pastels'] {
+    --theme-bg: #f6f1f7;
+    --theme-panel: #fffdfd;
+    --theme-text: #23414a;
+    --theme-accent: #0f9e7f;
+    --theme-soft: #e9f5f3;
+  }
+  body[data-theme='warm-vintage'] {
+    --theme-bg: #f6efe7;
+    --theme-panel: #fffaf2;
+    --theme-text: #3a2b2b;
+    --theme-accent: #9f5f2d;
+    --theme-soft: #f8ebdc;
+  }
+  body[data-theme='high-contrast'] {
+    --theme-bg: #f8fafc;
+    --theme-panel: #ffffff;
+    --theme-text: #0f172a;
+    --theme-accent: #0b8a70;
+    --theme-soft: #edf5f3;
+  }
+  body {
+    background: var(--theme-bg, #EAF4F4);
+    color: var(--theme-text, #17313A);
+  }
+  .theme-panel { background: var(--theme-panel, #fff); }
+  .theme-accent { color: var(--theme-accent, #0B8A70); }
   h1, h2, h3 { @apply font-display font-bold text-ink; }
   /* Visible keyboard focus everywhere (accessibility) */
   :focus-visible { outline: 3px solid #7C3AED; outline-offset: 3px; border-radius: 12px; }
@@ -48,3 +75,4 @@
 @keyframes butterfly-drift { from { transform: translate(0, 0); } to { transform: translate(20px, -12px); } }
 @keyframes gentle-rain { from { transform: translateY(-22px); opacity: .25; } to { transform: translateY(320px); opacity: .7; } }
 @keyframes river-breathe { 50% { transform: translateY(-3px); } }
+@keyframes koi-tail { from { transform: rotate(-14deg); } to { transform: rotate(14deg); } }

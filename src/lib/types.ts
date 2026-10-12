@@ -12,6 +12,46 @@ export interface SupportedPerson {
   updatedAt: number
 }
 
+export type PersonalTheme = 'high-contrast' | 'calming-pastels' | 'warm-vintage'
+
+export interface PersonalPreferences {
+  theme: PersonalTheme
+  favoriteColors: string[]
+  favoriteFlower: string | null
+  favoriteBird: string | null
+  favoriteSong: string | null
+  lifeActivityTags: string[]
+  favoriteAnimal?: string
+  favoriteFoods?: string[]
+  favoriteActivities?: string[]
+  favoritePlaces?: string[]
+  calmingSongReference?: string
+}
+
+export interface ApplicationSession {
+  id: string
+  personId: string
+  activityId: string
+  startedAt: number
+  endedAt?: number
+  appVersion?: string
+  baselineDifficultyTier?: number
+  currentDifficultyTier?: number
+}
+
+export interface CognitiveAssessment {
+  id: string
+  personId: string
+  instrumentId: string
+  instrumentVersion: string
+  consent: boolean
+  startedAt: number
+  completedAt?: number
+  status: 'in_progress' | 'completed' | 'abandoned'
+  result?: Record<string, unknown>
+  createdAt: number
+}
+
 export type MediaKind = 'photo' | 'voice'
 
 /** Opaque media locator; file bytes live in a media repository, never in app/localStorage state. */
@@ -80,16 +120,18 @@ export interface ChatMessage {
 export type InteractionState = 'normal' | 'needs_help' | 'confusion' | 'possible_frustration' | 'high_frustration'
 
 /** Activity identifiers are stable across UI changes and suitable for Part 3 event records. */
-export type ActivityId = 'faces' | 'pattern' | 'sequence' | 'category'
+export type ActivityId = 'faces' | 'pattern' | 'sequence' | 'category' | 'dual-n-back' | 'trail-making' | 'category-association'
 
 /** Non-judgmental activity lifecycle and interaction signals for Part 2 and Part 3. */
 export type Part2InteractionEvent =
+  | { type: 'rapid_taps'; at: number; sessionId: string; activityId: ActivityId; count: number }
   | { type: 'activity_started'; at: number; sessionId: string; activityId: ActivityId }
   | { type: 'activity_paused'; at: number; sessionId: string; activityId: ActivityId }
   | { type: 'activity_resumed'; at: number; sessionId: string; activityId: ActivityId }
   | { type: 'activity_ended'; at: number; sessionId: string; activityId: ActivityId; reason: 'finished' | 'left' | 'break' }
   | { type: 'memory_presented'; at: number; sessionId: string; activityId: ActivityId; memoryId: string }
-  | { type: 'response_submitted'; at: number; sessionId: string; activityId: ActivityId; promptId: string; responseId: string }
+  | { type: 'response_submitted'; at: number; sessionId: string; activityId: ActivityId; promptId: string; responseId: string; correct?: boolean; responseLatencyMs?: number; difficultyTier?: number }
+  | { type: 'difficulty_changed'; at: number; sessionId: string; activityId: ActivityId; previousLevel: number; newLevel: number; reason: string }
 
 /** Garden presentation is qualitative and never represents failure or performance. */
 export interface GardenState {
@@ -119,4 +161,16 @@ export interface AssistantContext {
   screenLabel: string
   userName: string
   state: InteractionState
+  activeGame?: string | null
+  gameDomain?: string | null
+  difficultyLevel?: number | null
+  score?: number | null
+  lastFailedAction?: string | null
+  elapsedTimeMs?: number
+  activityState?: 'idle' | 'active' | 'paused' | 'completed'
+  /** A few grounding facts about the supported person, e.g. "You live in Bangalore with your daughter Priya."
+   *  Used to answer identity/orientation questions ("who am I", "where am I") without guessing. */
+  personalDetails?: string[]
+  /** Minimal, opt-in personalization. Never includes private memories or arbitrary content. */
+  personalization?: Pick<PersonalPreferences, 'favoriteFlower' | 'favoriteBird' | 'favoriteSong' | 'lifeActivityTags'>
 }

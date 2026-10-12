@@ -7,7 +7,7 @@ export default defineConfig({
   resolve: { alias: { '@': path.resolve(__dirname, 'src') } },
   server: {
     port: 5173,
-    // Part 3: the Express server proxies Whisper / LLM calls
-    proxy: { '/api': 'http://localhost:8787' },
+    // The local Node server proxies LLM calls without exposing the API key.
+    proxy: { '/api': 'http://127.0.0.1:8787' },
   },
 })

@@ -65,11 +65,11 @@ describe('App shell + assistant toolbar', () => {
   afterEach(() => { vi.unstubAllGlobals() })
   const mount = (path = '/') => render(<MemoryRouter initialEntries={[path]}><App /></MemoryRouter>)
 
-  it('shows the assistant toolbar and bottom nav on every screen', async () => {
+  it('shows the assistant toolbar and the simplified 3-item bottom nav on every screen', async () => {
     for (const p of ['/', '/games', '/garden', '/profile', '/memories', '/games/faces']) {
       const { unmount } = mount(p)
       expect(screen.getByRole('button', { name: 'Talk to Assistant' })).toBeInTheDocument()
-      expect(within(screen.getByRole('navigation', { name: 'Main' })).getAllByRole('link')).toHaveLength(4)
+      expect(within(screen.getByRole('navigation', { name: 'Main' })).getAllByRole('link')).toHaveLength(3)
       unmount()
     }
   })

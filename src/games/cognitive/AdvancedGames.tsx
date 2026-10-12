@@ -5,6 +5,7 @@ import { createActivitySession, finishActivitySession, recordActivityEvent } fro
 import type { ActivityId, InteractionEvent, MemoryItem, Part2InteractionEvent } from '@/lib/types'
 import { useApp } from '@/store/useApp'
 import { useScreenContext } from '@/store/useScreenContext'
+import { FeedbackPopup, HowToPlayCard, choiceStateClass, type FeedbackStatus } from '@/games/GameFeedback'
 
 export type AdvancedGameId = 'dual-n-back' | 'trail-making' | 'category-association'
 
@@ -55,8 +56,12 @@ export function buildDualNBackRound(level: number, step = 0): DualNBackRound {
   const n = clamp(level <= 2 ? 2 : level <= 4 ? 3 : 4, 1, 4)
   const gridSize = level >= 4 ? 4 : 3
   const length = 10
+  // The sequence must depend only on `level` (not `step`): this function is called once per
+  // step with the step number, and the "n steps ago" check only works if every call agrees on
+  // what was shown at every earlier index. Mixing `step` into the seed made each call regenerate
+  // a different sequence, so "match" was being judged against tiles that were never actually shown.
   const sequence = Array.from({ length }, (_, index) => {
-    const position = seededInt(index * 23 + step * 11 + level, gridSize * gridSize) + 1
+    const position = seededInt(index * 23 + level * 97, gridSize * gridSize) + 1
     return {
       id: `dual-${index}-${position}`,
       position,
@@ -114,34 +119,68 @@ function itemBuckets(memories: MemoryItem[]) {
   return items
 }
 
-export function buildCategoryAssociationPrompt(level: number, memories: MemoryItem[]): CategoryAssociationPrompt {
+const GENERIC_ITEMS: Array<{ label: string; group: string }> = [
+  { label: 'watering can', group: 'gardening' },
+  { label: 'marigold', group: 'gardening' },
+  { label: 'teapot', group: 'kitchen' },
+  { label: 'cake', group: 'kitchen' },
+  { label: 'song', group: 'music' },
+  { label: 'dance', group: 'music' },
+  { label: 'Anita', group: 'family' },
+  { label: 'Rahul', group: 'family' },
+]
+
+function shuffle<T>(items: T[], seed: number): T[] {
+  const copy = [...items]
+  for (let i = copy.length - 1; i > 0; i -= 1) {
+    const j = seededInt(seed + i * 17 + 3, i + 1)
+    ;[copy[i], copy[j]] = [copy[j], copy[i]]
+  }
+  return copy
+}
+
+export function buildCategoryAssociationPrompt(level: number, memories: MemoryItem[], seed = Date.now()): CategoryAssociationPrompt {
   const personalItems = itemBuckets(memories)
+  const source: Array<{ label: string; group: string }> = personalItems.length ? personalItems : GENERIC_ITEMS
   const groups = new Map<string, string[]>()
-  for (const item of personalItems.length ? personalItems : [
-    { label: 'watering can', group: 'gardening' },
-    { label: 'marigold', group: 'gardening' },
-    { label: 'teapot', group: 'kitchen' },
-    { label: 'cake', group: 'kitchen' },
-    { label: 'song', group: 'music' },
-    { label: 'dance', group: 'music' },
-    { label: 'Anita', group: 'family' },
-    { label: 'Rahul', group: 'family' },
-  ]) {
+  for (const item of source) {
     const current = groups.get(item.group) ?? []
-    current.push(item.label)
+    if (!current.includes(item.label)) current.push(item.label)
     groups.set(item.group, current)
   }
-  const selectedGroup = Array.from(groups.entries()).sort((a, b) => b[1].length - a[1].length)[0]
-  const answer = selectedGroup?.[1]?.[0] ?? 'watering can'
-  const distractors = Array.from(groups.values()).flat().filter((label) => label !== answer).slice(0, Math.max(2, level + 1))
-  const choices = [...new Set([answer, ...distractors].slice(0, Math.min(5, 2 + level)))].map((label, index) => ({ id: `category-${label}-${index}`, label, group: selectedGroup?.[0] ?? 'gardening' }))
-  const fallback = choices.length > 0 ? choices : [{ id: 'category-answer', label: 'watering can', group: 'gardening' }]
+  const groupEntries = Array.from(groups.entries())
+  // Pick the answer group, preferring the one with the most items (more ways to vary it round to round).
+  const ranked = [...groupEntries].sort((a, b) => b[1].length - a[1].length)
+  const groupIndex = groupEntries.length > 1 ? seededInt(seed, ranked.length) : 0
+  const selectedGroup = ranked[groupIndex] ?? ranked[0] ?? ['gardening', ['watering can']] as [string, string[]]
+  const [groupName, groupItems] = selectedGroup
+  const answer = groupItems[seededInt(seed + 1, groupItems.length)] ?? groupItems[0]
+
+  // Distractors must come strictly from OTHER groups, otherwise more than one choice can be "correct".
+  let otherItems = groupEntries.filter(([name]) => name !== groupName).flatMap(([, items]) => items)
+  if (otherItems.length < 2) {
+    // Not enough variety in personal data alone — top up with generic items from other categories.
+    const extra = GENERIC_ITEMS.filter((item) => item.group !== groupName && !otherItems.includes(item.label)).map((item) => item.label)
+    otherItems = [...new Set([...otherItems, ...extra])]
+  }
+  const distractorCount = clamp(level + 1, 2, 4)
+  const distractors = shuffle(otherItems, seed + 5).slice(0, distractorCount)
+
+  const choiceLabels = shuffle([...new Set([answer, ...distractors])], seed + 11)
+  const choices = choiceLabels.map((label, index) => ({
+    id: `category-${label}-${index}-${seed}`,
+    label,
+    group: groupItems.includes(label) ? groupName : (groupEntries.find(([, items]) => items.includes(label))?.[0]
+      ?? GENERIC_ITEMS.find((item) => item.label === label)?.group ?? 'daily life'),
+  }))
+  const answerChoice = choices.find((choice) => choice.label === answer) ?? choices[0]
+
   return {
-    id: `category-${level}`,
-    category: selectedGroup?.[0] ?? 'gardening',
-    instruction: `Choose the item that best fits the group: ${selectedGroup?.[0] ?? 'gardening'}`,
-    choices: fallback,
-    answerId: fallback[0].id,
+    id: `category-${level}-${seed}`,
+    category: groupName,
+    instruction: `Choose the item that best fits the group: ${groupName}`,
+    choices,
+    answerId: answerChoice.id,
     source: personalItems.length ? 'memory' : 'generic',
   }
 }
@@ -215,12 +254,19 @@ export function DualNBackGame() {
   const setGameContext = useScreenContext((state) => state.setGameContext)
   const { adaptive, begin, session, submitResponse, record, promptStartedAt } = useSessionGame('dual-n-back')
   const [started, setStarted] = useState(false)
+  // The level used to build this round's tile sequence is snapshotted at game start and held
+  // fixed for the whole playthrough. If the adaptive engine changes `adaptive.level` mid-round
+  // (exactly what it is meant to do), rebuilding the sequence with the new level would silently
+  // regenerate every earlier tile too, so "n steps ago" would no longer match what was shown.
+  // The new level only takes effect the next time the person presses "Play again".
+  const [gameLevel, setGameLevel] = useState(adaptive.level)
   const [round, setRound] = useState<DualNBackRound>(() => buildDualNBackRound(adaptive.level, 0))
   const [index, setIndex] = useState(0)
   const [feedback, setFeedback] = useState('')
+  const [status, setStatus] = useState<FeedbackStatus>(null)
   const [complete, setComplete] = useState(false)
 
-  const activePrompt = useMemo(() => buildDualNBackRound(adaptive.level, index), [adaptive.level, index])
+  const activePrompt = useMemo(() => buildDualNBackRound(gameLevel, index), [gameLevel, index])
   const boardCells = useMemo(() => Array.from({ length: activePrompt.gridSize * activePrompt.gridSize }, (_, cellIndex) => cellIndex + 1), [activePrompt.gridSize])
 
   useEffect(() => {
@@ -239,15 +285,17 @@ export function DualNBackGame() {
 
   function startGame() {
     begin()
+    setGameLevel(adaptive.level)
     setStarted(true)
     setFeedback('')
+    setStatus(null)
     setComplete(false)
     setIndex(0)
     promptStartedAt.current = Date.now()
   }
 
   function answer(value: 'match' | 'no-match') {
-    if (!started || complete) return
+    if (!started || complete || status) return
     const correct = value === round.correctAnswer
     const at = Date.now()
     const latencyMs = Math.max(0, at - promptStartedAt.current)
@@ -255,7 +303,13 @@ export function DualNBackGame() {
     record({ type: 'rapid_taps', at, sessionId: session.sessionId, activityId: 'dual-n-back', count: 1 })
     if (!correct) useScreenContext.getState().setLastFailedAction('missed the dual n-back match')
     else useScreenContext.getState().setLastFailedAction(null)
-    setFeedback(correct ? 'Nice match. We can keep going.' : 'That is okay. Watch the position from a few steps earlier.')
+    setStatus(correct ? 'correct' : 'incorrect')
+    setFeedback(correct ? 'Nice match! That is right.' : `Not quite. Watch the tile from ${round.n} steps earlier — it did${round.correctAnswer === 'match' ? '' : ' not'} match this one.`)
+  }
+
+  function advance() {
+    setStatus(null)
+    setFeedback('')
     if (index >= 8) {
       setComplete(true)
       return
@@ -264,14 +318,29 @@ export function DualNBackGame() {
     promptStartedAt.current = Date.now()
   }
 
+  function retry() {
+    // Retry the same tile/step again rather than jumping ahead, so the hint just shown is useful.
+    setStatus(null)
+    setFeedback('')
+    promptStartedAt.current = Date.now()
+  }
+
   return (
     <section className="card p-5">
       <h2 className="text-2xl font-display">Dual N-Back</h2>
-      <p className="mt-2 text-ink/75">Watch the highlighted tile. Tap “Match” when the tile matches the one from {round.n} steps ago.</p>
       {!started ? (
-        <button type="button" onClick={startGame} className="btn-primary mt-4 w-full">Begin activity</button>
+        <div className="mt-4">
+          <HowToPlayCard
+            title="Dual N-Back"
+            description="Working memory"
+            instructions={`Watch the tile that lights up on the grid. Tap "Match" if it is in the same spot as the tile from ${round.n} turns earlier, or "No Match" if it is not.`}
+            example="If the lit tile is in the same corner it was a few turns ago, that is a match."
+            onStart={startGame}
+          />
+        </div>
       ) : (
         <>
+          <FeedbackPopup status={status} message={feedback} onRetry={retry} onContinue={advance} />
           <div className="mt-4 grid gap-2" style={{ gridTemplateColumns: `repeat(${round.gridSize}, minmax(0, 1fr))` }} aria-label="Dual N-Back board">
             {boardCells.map((cell) => {
               const active = cell === round.currentPosition
@@ -281,11 +350,10 @@ export function DualNBackGame() {
             })}
           </div>
           <div className="mt-4 grid grid-cols-2 gap-3">
-            <button type="button" onClick={() => answer('match')} className="min-h-[60px] rounded-2xl border-2 border-garden-600 bg-mint-100 font-semibold text-garden-900">Match</button>
-            <button type="button" onClick={() => answer('no-match')} className="min-h-[60px] rounded-2xl border-2 border-sky-deep bg-sky-soft font-semibold text-sky-deep">No Match</button>
+            <button type="button" disabled={Boolean(status)} onClick={() => answer('match')} className="min-h-[60px] rounded-2xl border-2 border-garden-600 bg-mint-100 font-semibold text-garden-900 disabled:opacity-60">Match</button>
+            <button type="button" disabled={Boolean(status)} onClick={() => answer('no-match')} className="min-h-[60px] rounded-2xl border-2 border-sky-deep bg-sky-soft font-semibold text-sky-deep disabled:opacity-60">No Match</button>
           </div>
-          {feedback && <p role="status" className="mt-4 rounded-xl bg-mint-100 p-3 text-garden-900">{feedback}</p>}
-          {complete && <button type="button" onClick={() => { setStarted(false); setComplete(false); setIndex(0); setFeedback(''); }} className="btn-primary mt-4 w-full">Play again</button>}
+          {complete && <button type="button" onClick={() => { setStarted(false); setComplete(false); setIndex(0); setFeedback(''); setStatus(null); }} className="btn-primary mt-4 w-full">Play again</button>}
         </>
       )}
       {!memories.length && <p className="mt-4 text-sm text-ink/70">No personal memory data is needed for this activity. The visual cue stays simple and supportive.</p>}
@@ -301,17 +369,14 @@ export function TrailMakingGame() {
   const [index, setIndex] = useState(0)
   const [selected, setSelected] = useState<string[]>([])
   const [feedback, setFeedback] = useState('')
+  const [status, setStatus] = useState<FeedbackStatus>(null)
+  const [wrongLabel, setWrongLabel] = useState<string | null>(null)
   const [complete, setComplete] = useState(false)
   const promptStartedAt = useRef(Date.now())
 
-  useEffect(() => {
-    setRound(buildTrailMakingRound(adaptive.level))
-    setSelected([])
-    setIndex(0)
-    setFeedback('')
-    setComplete(false)
-  }, [adaptive.level])
-
+  // Deliberately does NOT depend on adaptive.level: the board used to regenerate mid-game every
+  // time the difficulty engine adjusted the level, wiping out progress. A new board is only built
+  // when a game actually starts (see handleStart), using whatever level is current at that moment.
   useEffect(() => {
     setGameContext({
       activeGame: 'trail-making',
@@ -324,62 +389,93 @@ export function TrailMakingGame() {
 
   function handleStart() {
     begin()
+    setRound(buildTrailMakingRound(adaptive.level))
     setStarted(true)
     setSelected([])
     setIndex(0)
     setFeedback('')
+    setStatus(null)
+    setWrongLabel(null)
     setComplete(false)
     promptStartedAt.current = Date.now()
   }
 
   function handleChoose(label: string) {
-    if (!started || complete) return
+    if (!started || complete || status) return
     const expected = round.sequence[index]
     const correct = label === expected
     const at = Date.now()
     const latencyMs = Math.max(0, at - promptStartedAt.current)
     submitResponse(`trail-${index}`, label, correct, latencyMs)
     if (correct) {
-      const nextSelected = [...selected, label]
-      setSelected(nextSelected)
-      if (index >= round.sequence.length - 1) {
-        setComplete(true)
-        setFeedback('Nice work. You followed the route.')
-        return
-      }
-      setIndex((value) => value + 1)
-      setFeedback('Keep going.')
-      promptStartedAt.current = Date.now()
+      setSelected((value) => [...value, label])
+      setWrongLabel(null)
+      setStatus('correct')
+      setFeedback(index >= round.sequence.length - 1 ? 'Nice work. You followed the whole route.' : 'That is right. Keep going.')
       return
     }
-    setFeedback('That is okay. We can try the next step together.')
+    setWrongLabel(label)
+    setStatus('incorrect')
+    setFeedback('Not quite.')
     record({ type: 'rapid_taps', at, sessionId: session.sessionId, activityId: 'trail-making', count: 1 })
+  }
+
+  function advance() {
+    setStatus(null)
+    setFeedback('')
+    setWrongLabel(null)
+    if (index >= round.sequence.length - 1) {
+      setComplete(true)
+      return
+    }
+    setIndex((value) => value + 1)
+    promptStartedAt.current = Date.now()
+  }
+
+  function retry() {
+    setStatus(null)
+    setFeedback('')
+    setWrongLabel(null)
+    promptStartedAt.current = Date.now()
   }
 
   return (
     <section className="card p-5">
       <h2 className="text-2xl font-display">Trail Making</h2>
-      <p className="mt-2 text-ink/75">Follow the route in order: 1 → A → 2 → B → ...</p>
       {!started ? (
-        <button type="button" onClick={handleStart} className="btn-primary mt-4 w-full">Begin activity</button>
+        <div className="mt-4">
+          <HowToPlayCard
+            title="Trail Making"
+            description="Executive function"
+            instructions="Tap the circles in order: 1, then A, then 2, then B, and so on, counting and spelling as you go."
+            example="Start by tapping the circle marked 1."
+            onStart={handleStart}
+          />
+        </div>
       ) : (
         <>
+          <FeedbackPopup status={status} message={feedback} onRetry={retry} onContinue={advance} />
+          <p className="mt-2 text-ink/75">Follow the route in order: 1 → A → 2 → B → ...</p>
           <div className="relative mt-4 min-h-[260px] rounded-2xl border-2 border-mint-200 bg-mint-50">
             {round.nodes.map((node) => {
-              const active = selected.includes(node.label) || node.label === round.sequence[index]
-              return <button key={node.id} type="button" onClick={() => handleChoose(node.label)} aria-label={`Trail marker ${node.label}`} className={`absolute flex h-14 w-14 items-center justify-center rounded-full border-2 font-bold ${active ? 'border-garden-700 bg-garden-100 text-garden-900' : 'border-sky-deep bg-white text-sky-deep'}`} style={{ left: `${node.x}%`, top: `${node.y}%`, transform: 'translate(-50%, -50%)' }}>
+              const isSelected = selected.includes(node.label)
+              const isNext = node.label === round.sequence[index]
+              const isWrong = node.label === wrongLabel
+              const stateClass = isWrong ? choiceStateClass('wrong') : (isSelected || isNext) ? choiceStateClass('correct') : 'border-sky-deep bg-white text-sky-deep'
+              return <button key={node.id} type="button" disabled={Boolean(status)} onClick={() => handleChoose(node.label)} aria-label={`Trail marker ${node.label}`} className={`absolute flex h-14 w-14 items-center justify-center rounded-full border-2 font-bold disabled:opacity-90 ${stateClass}`} style={{ left: `${node.x}%`, top: `${node.y}%`, transform: 'translate(-50%, -50%)' }}>
                 {node.label}
               </button>
             })}
           </div>
           <p className="mt-4 font-semibold text-garden-900">Next: {round.sequence[index]}</p>
-          {feedback && <p role="status" className="mt-3 rounded-xl bg-mint-100 p-3 text-garden-900">{feedback}</p>}
-          {complete && <button type="button" onClick={() => { setStarted(false); setIndex(0); setSelected([]); setFeedback(''); setComplete(false); }} className="btn-primary mt-4 w-full">Play again</button>}
+          {complete && <button type="button" onClick={() => { setStarted(false); setIndex(0); setSelected([]); setFeedback(''); setStatus(null); setComplete(false); }} className="btn-primary mt-4 w-full">Play again</button>}
         </>
       )}
     </section>
   )
 }
+
+const CATEGORY_ROUND_COUNT = 8
 
 export function CategoryAssociationGame() {
   const { memories } = useApp()
@@ -388,62 +484,110 @@ export function CategoryAssociationGame() {
   const [started, setStarted] = useState(false)
   const [prompt, setPrompt] = useState<CategoryAssociationPrompt>(() => buildCategoryAssociationPrompt(adaptive.level, memories))
   const [feedback, setFeedback] = useState('')
+  const [status, setStatus] = useState<FeedbackStatus>(null)
+  const [wrongChoiceId, setWrongChoiceId] = useState<string | null>(null)
   const [key, setKey] = useState(0)
+  const [round, setRound] = useState(1)
+  const [complete, setComplete] = useState(false)
 
-  useEffect(() => {
-    setPrompt(buildCategoryAssociationPrompt(adaptive.level, memories))
-  }, [adaptive.level, memories])
+  // The prompt used to rebuild itself whenever adaptive.level changed, which could swap the
+  // question out from under the person mid-answer. It now only changes when a round actually
+  // advances (see advance/retryRound), using whatever level is current at that moment.
 
   useEffect(() => {
     setGameContext({
       activeGame: 'category-association',
       gameDomain: 'Language',
       difficultyLevel: adaptive.level,
-      activityState: started ? 'active' : 'idle',
+      activityState: started ? (complete ? 'completed' : 'active') : 'idle',
       score: null,
     })
-  }, [adaptive.level, setGameContext, started])
+  }, [adaptive.level, complete, setGameContext, started])
 
   function handleStart() {
     begin()
     setStarted(true)
+    setPrompt(buildCategoryAssociationPrompt(adaptive.level, memories))
     setFeedback('')
+    setStatus(null)
+    setWrongChoiceId(null)
+    setRound(1)
+    setComplete(false)
     setKey((value) => value + 1)
   }
 
   function handleChoose(choiceId: string) {
-    if (!started) return
+    if (!started || complete || status) return
     const correct = choiceId === prompt.answerId
     if (!correct) useScreenContext.getState().setLastFailedAction('selected the wrong category')
     else useScreenContext.getState().setLastFailedAction(null)
     submitResponse(`category-${key}`, choiceId, correct)
-    setFeedback(correct ? 'Nice choice. That fits the group.' : 'That is okay. We can look at the group together.')
-    if (!correct) {
-      setPrompt(buildCategoryAssociationPrompt(adaptive.level, memories))
-      setKey((value) => value + 1)
+    if (correct) {
+      setStatus('correct')
+      setWrongChoiceId(null)
+      setFeedback('Nice choice — that fits the group.')
+    } else {
+      const answerLabel = prompt.choices.find((choice) => choice.id === prompt.answerId)?.label
+      setStatus('incorrect')
+      setWrongChoiceId(choiceId)
+      setFeedback(answerLabel ? `Not quite. "${answerLabel}" is the one that fits ${prompt.category}.` : 'Not quite. Let’s look again.')
     }
+  }
+
+  function advance() {
+    setStatus(null)
+    setFeedback('')
+    setWrongChoiceId(null)
+    if (round >= CATEGORY_ROUND_COUNT) {
+      setComplete(true)
+      return
+    }
+    setRound((value) => value + 1)
+    setPrompt(buildCategoryAssociationPrompt(adaptive.level, memories))
+    setKey((value) => value + 1)
+  }
+
+  function retry() {
+    // Keep the same prompt so the hint just shown (the answer label) is immediately useful.
+    setStatus(null)
+    setFeedback('')
+    setWrongChoiceId(null)
   }
 
   return (
     <section className="card p-5">
       <h2 className="text-2xl font-display">Category Association</h2>
-      <p className="mt-2 text-ink/75">Choose the item that best fits the group.</p>
       {!started ? (
-        <button type="button" onClick={handleStart} className="btn-primary mt-4 w-full">Begin activity</button>
+        <div className="mt-4">
+          <HowToPlayCard
+            title="Category Association"
+            description="Language"
+            instructions="Look at the group name, then tap the item below that belongs with it."
+            example="If the group is gardening, choose a watering can rather than a teapot."
+            onStart={handleStart}
+          />
+        </div>
       ) : (
         <>
-          <div className="mt-4 rounded-2xl border-2 border-mint-200 bg-mint-50 p-4">
+          <FeedbackPopup status={status} message={feedback} onRetry={retry} onContinue={advance} />
+          <p className="mt-2 text-sm text-ink/60">Round {round} of {CATEGORY_ROUND_COUNT}</p>
+          <div className="mt-2 rounded-2xl border-2 border-mint-200 bg-mint-50 p-4">
             <div className="flex items-center gap-2 text-garden-900"><Tags size={22} /> <span className="font-semibold">{prompt.category}</span></div>
             <p className="mt-2 text-lg">{prompt.instruction}</p>
           </div>
           <div className="mt-4 grid grid-cols-2 gap-3">
-            {prompt.choices.map((choice) => (
-              <button key={choice.id} type="button" onClick={() => handleChoose(choice.id)} className="min-h-[64px] rounded-2xl border-2 border-garden-600 bg-white px-3 font-semibold text-garden-900">
-                {choice.label}
-              </button>
-            ))}
+            {prompt.choices.map((choice) => {
+              const isWrong = choice.id === wrongChoiceId
+              const isCorrectReveal = status === 'incorrect' && choice.id === prompt.answerId
+              const stateClass = isWrong ? choiceStateClass('wrong') : isCorrectReveal ? choiceStateClass('correct') : choiceStateClass('default')
+              return (
+                <button key={choice.id} type="button" disabled={Boolean(status)} onClick={() => handleChoose(choice.id)} className={`min-h-[64px] rounded-2xl border-2 px-3 font-semibold disabled:opacity-90 ${stateClass}`}>
+                  {choice.label}
+                </button>
+              )
+            })}
           </div>
-          {feedback && <p role="status" className="mt-4 rounded-xl bg-mint-100 p-3 text-garden-900">{feedback}</p>}
+          {complete && <button type="button" onClick={() => { setStarted(false); setComplete(false); setStatus(null); setFeedback(''); }} className="btn-primary mt-4 w-full">Play again</button>}
         </>
       )}
       {prompt.source === 'memory' && <p className="mt-4 text-sm text-ink/70">This example uses familiar items from your memories.</p>}

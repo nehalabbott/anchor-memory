@@ -26,7 +26,7 @@ describe('advanced cognitive games', () => {
     expect(round.n).toBeGreaterThanOrEqual(2)
 
     render(<MemoryRouter><DualNBackGame /></MemoryRouter>)
-    fireEvent.click(screen.getByRole('button', { name: 'Begin activity' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Start playing' }))
     fireEvent.click(screen.getByRole('button', { name: 'Match' }))
     expect(useApp.getState().events.some((event) => event.type === 'response_submitted' && event.activityId === 'dual-n-back')).toBe(true)
   })
@@ -37,7 +37,7 @@ describe('advanced cognitive games', () => {
     expect(round.nodes.length).toBe(round.sequence.length)
 
     render(<MemoryRouter><TrailMakingGame /></MemoryRouter>)
-    fireEvent.click(screen.getByRole('button', { name: 'Begin activity' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Start playing' }))
     fireEvent.click(screen.getByRole('button', { name: 'Trail marker 1' }))
     expect(screen.getByText(/Next:/i)).toBeInTheDocument()
     expect(useApp.getState().events.some((event) => event.type === 'response_submitted' && event.activityId === 'trail-making')).toBe(true)
@@ -45,7 +45,7 @@ describe('advanced cognitive games', () => {
 
   it('selects a correct category association with memory personalization and falls back generically when memories are empty', () => {
     render(<MemoryRouter><CategoryAssociationGame /></MemoryRouter>)
-    fireEvent.click(screen.getByRole('button', { name: 'Begin activity' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Start playing' }))
     const buttons = screen.getAllByRole('button')
     const firstChoice = buttons.find((button) => button.textContent && /watering can|marigold|teapot|cake|song|dance|Anita|Rahul/i.test(button.textContent))
     expect(firstChoice).toBeTruthy()

@@ -15,6 +15,7 @@ import { useAdaptiveDifficulty } from '@/hooks/useAdaptiveDifficulty'
 import { selectChoicesWithRequired } from '@/lib/adaptiveDifficulty/choices'
 import { AdvancedGamePage } from '@/games/cognitive/AdvancedGames'
 import { useScreenContext } from '@/store/useScreenContext'
+import { HowToPlayCard } from '@/games/GameFeedback'
 
 const ROUTE_ACTIVITY = {
   faces: 'faces',
@@ -42,6 +43,12 @@ const INSTRUCTIONS: Record<ActivityId, string> = {
   'dual-n-back': 'Watch the tile, then decide whether it matches the item from earlier in the sequence.',
   'trail-making': 'Follow the route in order: 1 → A → 2 → B → ...',
   'category-association': 'Choose the item that best matches the group.',
+}
+const EXAMPLES: Partial<Record<ActivityId, string>> = {
+  faces: 'Look at the photo, then tap the name that matches.',
+  pattern: 'If you see circle, square, circle, square — the next one is circle.',
+  sequence: 'Study the items, then tap them back in the same order you saw them.',
+  category: 'If three items are fruit and one is a cup, the cup is the different one.',
 }
 const GAME_IDS = Object.keys(ROUTE_ACTIVITY) as (keyof typeof ROUTE_ACTIVITY)[]
 const GLYPHS: Record<GameGlyph, LucideIcon> = {
@@ -334,9 +341,15 @@ function Activity({ activityId }: { activityId: ActivityId }) {
           <Link to="/memories" className="btn-primary mt-4 w-full">Open personal memories</Link>
         </div>
       ) : !started ? (
-        <div className="card p-5">
-          <p className="text-lg">{activityId === 'faces' ? 'These familiar people and portraits come from your caregiver’s memories.' : 'We will explore a simple visual activity using familiar themes where available. There is no timer, and you can pause whenever you like.'}</p>
-          <button type="button" onClick={begin} className="btn-primary mt-5 w-full">Begin activity</button>
+        <div>
+          <HowToPlayCard
+            title={TITLES[activityId]}
+            description={activityId === 'faces' ? 'These familiar people and portraits come from your caregiver’s memories.' : 'A simple visual activity using familiar themes where available. There is no timer, and you can pause whenever you like.'}
+            instructions={INSTRUCTIONS[activityId]}
+            example={EXAMPLES[activityId]}
+            onStart={begin}
+            startLabel="Begin activity"
+          />
           <Link to="/games" className="btn-soft mt-3 w-full">Choose another activity</Link>
         </div>
       ) : showExperience ? (

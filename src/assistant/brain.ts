@@ -84,16 +84,12 @@ export class RuleBasedBrain implements AssistantBrain {
     if (/offer a shorter sequence/.test(t)) return `Of course. Let's use just two familiar items and build their order together. There is no rush.`
 
     if (/clue|hint/.test(t)) {
-      const memory = memories.find((item) => item.story.trim())
-      return memory
-        ? `Let's look at one of your memories together: ${memory.name}. ${memory.story}`
-        : `There is no rush, ${name}. We can ask your caregiver to add a memory to explore together.`
+      const screenLabel = ctx.screenLabel || 'this screen'
+      return `We can take it gently, ${name}. You're on the "${screenLabel}" screen. Would you like a smaller step, a quiet hint, or a short rest?`
     }
     if (/easier/.test(t)) {
-      const memory = memories.find((item) => item.story.trim())
-      return memory
-        ? `We can keep it simple, ${name}. Would you like to talk about ${memory.name}? ${memory.story}`
-        : `We can take this gently, ${name}. Would you like to rest or look at a photo with your caregiver?`
+      const screenLabel = ctx.screenLabel || 'this screen'
+      return `We can keep it simple, ${name}. You're on the "${screenLabel}" screen, so we can take one small step at a time. Would you like a gentler option or a short break?`
     }
     if (/gentle break|need a break|take a break/.test(t)) {
       return `Of course, ${name}. There is no rush. Let's pause together; the Memory Aquarium will be here when you are ready.`
@@ -153,9 +149,9 @@ export function silenceCheckIn(name: string): string {
   return variants[Math.floor(Math.random() * variants.length)]
 }
 
-/** Second escalation: a concrete, specific hint drawn from the person's own memories, never generic. */
-export function silenceHint(name: string, memories: MemoryItem[]): string {
-  const memory = memories.find((m) => m.story.trim())
-  if (memory) return `${name}, would this help? ${memory.name} — ${memory.story}`
-  return `${name}, would you like to take a gentle break, or ask your caregiver to add a memory we can look at together?`
+/** Second escalation: stay grounded in the current screen and keep the cue soft, never random or alarming. */
+export function silenceHint(name: string, _memories: MemoryItem[], screenLabel = 'this screen'): string {
+  const visibleScreen = screenLabel || 'this screen'
+  const gentlePrompt = `No rush at all, ${name}. You're on the "${visibleScreen}" screen. Would you like a gentle hint, a short rest, or just a quiet moment together?`
+  return gentlePrompt
 }

@@ -50,6 +50,60 @@ const EXAMPLES: Partial<Record<ActivityId, string>> = {
   sequence: 'Study the items, then tap them back in the same order you saw them.',
   category: 'If three items are fruit and one is a cup, the cup is the different one.',
 }
+
+function ActivityExampleVisual({ activityId }: { activityId: ActivityId }) {
+  if (activityId === 'faces') {
+    return (
+      <div className="flex items-center justify-center gap-3 rounded-2xl border border-mint-200 bg-white p-3">
+        <div className="flex h-16 w-16 items-center justify-center rounded-full bg-mint-100 text-xl font-bold text-garden-900">A</div>
+        <div className="flex flex-col items-start">
+          <span className="text-sm font-semibold text-ink/60">Who is this?</span>
+          <div className="mt-1 flex gap-2">
+            <span className="rounded-lg border border-garden-600 bg-mint-100 px-2 py-1 text-sm font-semibold text-garden-900">Anita</span>
+            <span className="rounded-lg border border-garden-600 bg-white px-2 py-1 text-sm font-semibold text-garden-900">Rahul</span>
+          </div>
+        </div>
+      </div>
+    )
+  }
+
+  if (activityId === 'pattern') {
+    return (
+      <div className="flex items-center justify-center gap-2 rounded-2xl border border-mint-200 bg-white p-3">
+        {[ 'circle', 'square', 'circle', 'square', 'circle' ].map((glyph, index) => (
+          <div key={`${glyph}-${index}`} className="flex h-12 w-12 items-center justify-center rounded-xl border-2 border-garden-600 bg-mint-50 text-garden-900">
+            <TokenIcon glyph={glyph as GameGlyph} />
+          </div>
+        ))}
+        <span className="text-3xl text-garden-700">?</span>
+      </div>
+    )
+  }
+
+  if (activityId === 'sequence') {
+    return (
+      <div className="rounded-2xl border border-mint-200 bg-white p-3">
+        <div className="flex items-center justify-center gap-2">
+          {(['flower', 'apple', 'leaf', 'cup'] as GameGlyph[]).map((glyph, index) => (
+            <div key={`${glyph}-${index}`} className="flex h-12 w-12 flex-col items-center justify-center rounded-xl border-2 border-garden-600 bg-mint-50 text-garden-900">
+              <TokenIcon glyph={glyph} />
+            </div>
+          ))}
+        </div>
+      </div>
+    )
+  }
+
+  return (
+    <div className="grid grid-cols-2 gap-2 rounded-2xl border border-mint-200 bg-white p-3">
+      {(['apple', 'apple', 'apple', 'cup'] as GameGlyph[]).map((glyph, index) => (
+        <div key={`${glyph}-${index}`} className="flex h-14 items-center justify-center rounded-xl border-2 border-garden-600 bg-mint-50 text-garden-900">
+          <TokenIcon glyph={glyph} />
+        </div>
+      ))}
+    </div>
+  )
+}
 const GAME_IDS = Object.keys(ROUTE_ACTIVITY) as (keyof typeof ROUTE_ACTIVITY)[]
 const GLYPHS: Record<GameGlyph, LucideIcon> = {
   circle: Circle, square: Square, triangle: Triangle, flower: Flower2, leaf: Leaf,
@@ -379,6 +433,7 @@ function Activity({ activityId }: { activityId: ActivityId }) {
             description={activityId === 'faces' ? 'These familiar people and portraits come from your caregiver’s memories.' : 'A simple visual activity using familiar themes where available. There is no timer, and you can pause whenever you like.'}
             instructions={INSTRUCTIONS[activityId]}
             example={EXAMPLES[activityId]}
+            exampleVisual={<ActivityExampleVisual activityId={activityId} />}
             onStart={begin}
             startLabel="Begin activity"
           />
@@ -593,8 +648,31 @@ function TokenTile({ token, scale = 1 }: { token: GameToken; scale?: number }) {
 }
 
 function TokenIcon({ glyph }: { glyph: GameGlyph }) {
-  const Icon = GLYPHS[glyph]
-  return <Icon size={38} strokeWidth={2.5} aria-hidden />
+  const art = {
+    circle: <svg viewBox="0 0 64 64" className="h-9 w-9" aria-hidden><circle cx="32" cy="32" r="16" fill="#7FC7D6" stroke="#1B4E59" strokeWidth="3" /></svg>,
+    square: <svg viewBox="0 0 64 64" className="h-9 w-9" aria-hidden><rect x="17" y="17" width="30" height="30" rx="6" fill="#C2D5FF" stroke="#3D4A8C" strokeWidth="3" /></svg>,
+    triangle: <svg viewBox="0 0 64 64" className="h-9 w-9" aria-hidden><path d="M32 12L51 48H13L32 12Z" fill="#F8D4A5" stroke="#8A5A2B" strokeWidth="3" /></svg>,
+    flower: <svg viewBox="0 0 64 64" className="h-9 w-9" aria-hidden>
+      <circle cx="32" cy="18" r="7" fill="#F9B8D7" stroke="#AF4575" strokeWidth="2.5" />
+      <circle cx="18" cy="32" r="7" fill="#F9B8D7" stroke="#AF4575" strokeWidth="2.5" />
+      <circle cx="46" cy="32" r="7" fill="#F9B8D7" stroke="#AF4575" strokeWidth="2.5" />
+      <circle cx="24" cy="22" r="7" fill="#F9B8D7" stroke="#AF4575" strokeWidth="2.5" />
+      <circle cx="40" cy="22" r="7" fill="#F9B8D7" stroke="#AF4575" strokeWidth="2.5" />
+      <circle cx="24" cy="42" r="7" fill="#F9B8D7" stroke="#AF4575" strokeWidth="2.5" />
+      <circle cx="40" cy="42" r="7" fill="#F9B8D7" stroke="#AF4575" strokeWidth="2.5" />
+      <path d="M32 29V46" stroke="#2E7D32" strokeWidth="3" strokeLinecap="round" />
+      <path d="M32 46C26 48 24 54 32 56C40 54 38 48 32 46Z" fill="#4AAE62" stroke="#2E7D32" strokeWidth="2" />
+    </svg>,
+    leaf: <svg viewBox="0 0 64 64" className="h-9 w-9" aria-hidden><path d="M14 35C17 20 33 13 49 16C48 35 35 47 18 50C14 45 12 41 14 35Z" fill="#8EDD8A" stroke="#2D7A40" strokeWidth="2.5" /><path d="M18 35C29 35 36 28 42 18" stroke="#2D7A40" strokeWidth="2.5" strokeLinecap="round" /></svg>,
+    apple: <svg viewBox="0 0 64 64" className="h-9 w-9" aria-hidden><path d="M24 18C18 23 18 35 27 41C34 46 42 44 45 36C48 28 43 18 36 16C31 15 27 16 24 18Z" fill="#E74A4A" stroke="#8F2020" strokeWidth="2.5" /><path d="M32 12C33 17 38 18 38 23" stroke="#2E7D32" strokeWidth="2.5" strokeLinecap="round" /><path d="M32 18c-1-5 2-9 7-10" stroke="#2E7D32" strokeWidth="2.5" strokeLinecap="round" /></svg>,
+    sun: <svg viewBox="0 0 64 64" className="h-9 w-9" aria-hidden><circle cx="32" cy="32" r="15" fill="#F6D365" stroke="#B47A19" strokeWidth="3" /><g stroke="#B47A19" strokeWidth="3" strokeLinecap="round"><path d="M32 6v8M32 50v8M6 32h8M50 32h8M13 13l6 6M45 45l6 6M13 51l6-6M45 19l6-6" /></g></svg>,
+    cup: <svg viewBox="0 0 64 64" className="h-9 w-9" aria-hidden><path d="M18 22h28v18c0 7-6 12-14 12S18 47 18 40V22Z" fill="#D9F0FF" stroke="#345E76" strokeWidth="3" /><path d="M46 27h6c3 0 6 3 6 6s-3 6-6 6h-6" fill="none" stroke="#345E76" strokeWidth="3" strokeLinecap="round" /><path d="M22 22V16h20v6" fill="none" stroke="#345E76" strokeWidth="3" strokeLinecap="round" /><path d="M24 26h16" stroke="#345E76" strokeWidth="2.5" strokeLinecap="round" /></svg>,
+    camera: <svg viewBox="0 0 64 64" className="h-9 w-9" aria-hidden><rect x="11" y="18" width="42" height="28" rx="6" fill="#9AC8D7" stroke="#294A5F" strokeWidth="3" /><circle cx="32" cy="32" r="11" fill="#CDEAEF" stroke="#294A5F" strokeWidth="3" /><circle cx="48" cy="25" r="4" fill="#F6D365" stroke="#A26708" strokeWidth="2" /><path d="M19 18l5-7h16l5 7" fill="none" stroke="#294A5F" strokeWidth="3" strokeLinecap="round" /></svg>,
+    basket: <svg viewBox="0 0 64 64" className="h-9 w-9" aria-hidden><path d="M18 24h28l-4 22H22L18 24Z" fill="#D8A76D" stroke="#7A4F2E" strokeWidth="3" /><path d="M22 24l4-8h12l4 8" fill="none" stroke="#7A4F2E" strokeWidth="3" strokeLinecap="round" /><path d="M18 24c2 3 6 4 8 4m20-4c-2 3-6 4-8 4" stroke="#7A4F2E" strokeWidth="2.5" strokeLinecap="round" /></svg>,
+    bird: <svg viewBox="0 0 64 64" className="h-9 w-9" aria-hidden><path d="M18 36c0-13 10-22 22-22 12 0 18 8 18 18 0 10-6 17-17 19l-9 4-4-9 8-10H18Z" fill="#6DCCFF" stroke="#375D93" strokeWidth="3" /><path d="M35 23l10-8" stroke="#375D93" strokeWidth="3" strokeLinecap="round" /><circle cx="25" cy="30" r="3.5" fill="#375D93" /></svg>,
+    chair: <svg viewBox="0 0 64 64" className="h-9 w-9" aria-hidden><rect x="22" y="18" width="20" height="16" rx="4" fill="#C6B3FF" stroke="#5F4EA0" strokeWidth="3" /><path d="M18 33h28v9H18z" fill="#D7CCFF" stroke="#5F4EA0" strokeWidth="3" /><path d="M22 42v11M42 42v11M18 33l-6 11M46 33l6 11" stroke="#5F4EA0" strokeWidth="3" strokeLinecap="round" /></svg>,
+  }
+  return art[glyph] ?? art.circle
 }
 
 function UnknownActivity() {

@@ -5,7 +5,7 @@ import { MemoryRouter } from 'react-router-dom'
 import App from '@/App'
 import { useApp } from '@/store/useApp'
 import { listen, speak } from './speech'
-import { NUDGE_DELAY_MS, HINT_DELAY_MS } from './brain'
+import { NUDGE_DELAY_MS, HINT_DELAY_MS, silenceHint } from './brain'
 
 vi.mock('./speech', () => ({
   canListen: true,
@@ -38,14 +38,21 @@ describe('proactive inactivity nudge', () => {
     expect(screen.getByRole('button', { name: /Mo is checking in on you/ })).toBeInTheDocument()
   })
 
-  it('escalates to an auto-opened, concrete hint if still no response', async () => {
+  it('escalates to a soft, screen-aware hint if still no response', async () => {
     render(<MemoryRouter initialEntries={['/games']}><App /></MemoryRouter>)
 
     await act(async () => { await vi.advanceTimersByTimeAsync(HINT_DELAY_MS + 50) })
 
     expect(useApp.getState().assistantOpen).toBe(true)
-    await waitFor(() => expect(screen.getByText(/Lily/)).toBeInTheDocument())
+    await waitFor(() => expect(screen.getByText(/No rush at all, Margaret\. You're on the "Choose an Activity" screen\./i)).toBeInTheDocument())
+    expect(screen.queryByText(/Lily/i)).not.toBeInTheDocument()
     expect(useApp.getState().events.some((e) => e.type === 'help_request')).toBe(true)
+  })
+
+  it('keeps inactivity hints grounded in the screen instead of a random memory', () => {
+    const hint = silenceHint('Margaret', [{ id: 'm1', kind: 'story', name: 'Lily', story: 'She taught me to bake apple pie every Sunday.', createdAt: Date.now() } as any], 'Choose an Activity')
+    expect(hint).toMatch(/Choose an Activity|quiet moment|No rush/i)
+    expect(hint).not.toMatch(/Lily|apple pie/i)
   })
 
   it('a tap anywhere resets the clock so it does not nudge right after activity', async () => {
@@ -79,7 +86,8 @@ describe('proactive inactivity nudge', () => {
     const chat = useApp.getState().chat
     const last = chat[chat.length - 1]
     expect(last.role).toBe('assistant')
+    expect(last.text).toMatch(/No rush at all|Choose an Activity/i)
     expect(speak).toHaveBeenCalled()
-    expect(listen).toHaveBeenCalled()
+    expect(chat.filter((m) => m.role === 'user')).toHaveLength(0)
   })
 })

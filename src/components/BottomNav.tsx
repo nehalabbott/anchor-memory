@@ -13,7 +13,7 @@ export default function BottomNav() {
           const Icon = ICONS[icon]
           return (
             <li key={path}>
-              <NavLink to={path} end={path === '/'}
+              <NavLink to={path}
                 className={({ isActive }) =>
                   `flex flex-col items-center justify-center gap-1 min-h-[64px] rounded-2xl font-display font-semibold text-base transition ${
                     isActive ? 'bg-mint-100 text-garden-900' : 'text-ink/70 hover:bg-mint-100/60'}`}>

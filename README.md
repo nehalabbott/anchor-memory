@@ -1,83 +1,119 @@
 # Anchor
 
-> Personalised memory games and a gentle AI assistant for people with early-stage dementia.
+> Personalised memory games and a gentle AI assistant for older adults with early-stage dementia.
 
-A senior-friendly web app that turns a person's own memories into gentle cognitive games. A caregiver adds photos, names and stories; the app builds activities from them; and a voice-enabled assistant (Mo) offers hints, easier questions or a calming break when it notices the person struggling. Built as an HCI course project by Nehal Abbott & Sonu, following high-contrast, low-pressure, non-scored design principles. The visual language follows the Lab 5 wireframes.
+Anchor is a senior-friendly app designed to support memory recall, confidence, and calm engagement through a small set of personalised activities. A caregiver can add memories, names, routines, and stories; the app turns them into gentle, familiar games. A voice-enabled assistant called Mo responds with prompts, simpler hints, and supportive breaks when the person seems stuck or overwhelmed.
 
-**Status: work in progress. Part 2 of 3 (personalised games + a living Memory Garden) complete.**
+This project uses a high-contrast, low-pressure design with large touch targets, simple language, and no score-based pressure. It is intended as a supportive memory tool, not a diagnosis or medical assessment.
 
-> Anchor gives behavioural estimates to guide the assistant, never a diagnosis. It is not a medical device.
+## Current app structure
 
-## Run it
+The app now follows a simple three-part flow:
 
-Run these from the folder that contains `package.json` and `src/`.
+- Memories: add and review memories, people, routines, and meaningful details
+- Games: play seven memory-based activities, from simple recognition tasks to more demanding working-memory exercises
+- Memory Aquarium: a calm reflective place that responds to recent activity and mood
 
-Requires **Node 20.17+** to run the local SQLite-backed server (tested on Node 24).
+The app intentionally keeps older routes for compatibility while redirecting to this modern flow.
+
+## What is included
+
+### Memory capture and personalisation
+
+- Caregiver memory profile with names, relationships, stories, and important details
+- Personalised prompts and clues drawn from saved memories
+- Gentle, non-judgmental activity flow with retry and easier help options
+
+### Games
+
+The activity library includes both easy and more advanced cognitive games:
+
+- Familiar Faces
+- Pattern & Shape Match
+- Sequence Memory
+- Odd One Out
+- Dual N-Back
+- Trail Making
+- Category Association
+
+The simple games include feedback states, retry paths, and clearer correct/incorrect cues. The last three advanced games include a consistent Back to games action so a user can leave without feeling stuck.
+
+### Memory Aquarium
+
+The garden view has been renamed to Memory Aquarium and is intended as a calm reflection area rather than a decorative garden section. It reflects recent game experience through mood and movement, without presenting a numeric score or judgment.
+
+### Assistant and voice support
+
+- Persistent assistant bar and panel
+- Voice input and spoken responses via the browser Web Speech API
+- Quick actions such as clue, easier version, and break
+- Context-aware guidance using recent conversation, current screen, and memory summaries
+- Safety-first responses that avoid diagnosis and redirect to trusted carers or clinicians when needed
+
+## Run locally
+
+Requires Node 20.17+.
 
 ```bash
 npm install
-Copy-Item .env.example .env
-# Set GROQ_API_KEY in .env, then run these in separate terminals:
-npm run server       # local Groq proxy on :8787
-npm run dev          # http://localhost:5173
+cp .env.example .env
 ```
 
-Open it on a phone-sized window (or DevTools device mode). On desktop it renders as a centred phone column.
-
-## Local application database
-
-The Node server initializes a local SQLite database at `data/anchor.sqlite` and applies versioned migrations before it listens. The `data/` directory is ignored by Git because it can contain personal information. Set `ANCHOR_DATABASE_PATH` to use a different local database file.
-
-The server owns durable APIs for the supported person, structured preferences, memory metadata, sessions, interaction events, and generic consented assessments. On startup, the app checks the server once; if a prior `anchor-v1` local store exists, it imports missing stable memory IDs without overwriting an existing server person. Zustand remains the UI/cache and offline fallback layer. Normal person and memory changes are server-first; unavailable-backend creates/edits are marked pending and retried when connectivity returns. Deletes only leave the cache after server confirmation. The import marker and pending identifiers persist locally; no localStorage or IndexedDB data is automatically deleted.
-
-Starting an activity creates a backend session asynchronously. Existing typed activity events are buffered locally, sent in batches, and retried with stable event IDs. Ambient voice/acoustic data is not included. Photo/audio bytes remain in IndexedDB; SQLite stores media references only. `syncLocalDataToBackend` remains available as an explicit resumable migration helper and does not claim success if a request fails.
-
-The current assessment API stores a generic instrument identifier and result; it is not an official MoCA implementation. The local server is intended for localhost use and does not provide accounts or authentication.
-
-Other commands:
+Set `GROQ_API_KEY` in `.env`, then run the app in separate terminals:
 
 ```bash
-npm test             # assistant, games, backend/database, and UI tests
-npm run typecheck
-npm run build && npm run preview
-npm run server       # Groq API proxy on :8787
+npm run server
+npm run dev
 ```
 
-## What's built so far
+The app runs in the browser at http://localhost:5173. The local proxy serves the AI assistant on port 8787.
 
-| Area | Files |
-|---|---|
-| App shell (content, persistent assistant toolbar, bottom nav) | `src/components/Layout.tsx`, `BottomNav.tsx` |
-| **Assistant toolbar** (purple "Talk to Assistant" pill on every screen; pulses on its own after a quiet stretch) | `src/components/AssistantBar.tsx` |
-| **Assistant panel** (chat, voice in, spoken replies, Clue / Easier / Break quick actions, safety notice) | `src/components/AssistantPanel.tsx` |
-| **Proactive check-ins**: if the person goes quiet anywhere in the app, Mo first pulses the toolbar, then opens on its own with a concrete hint drawn from their memories | `src/assistant/useInactivityNudge.ts` |
-| Pluggable assistant brain — sends recent conversation, current screen, and bounded memory context to Groq; handles personal details gently and avoids medical diagnosis | `src/assistant/brain.ts`, `server/index.js` |
-| Voice input + text-to-speech (Web Speech API) | `src/assistant/speech.ts` |
-| Caregiver memory profile (name, relationship, story, personal details) | `src/pages/Memories.tsx`, `src/store/useApp.ts` |
-| Four games: Familiar Faces, Memory Match, Story Recall, Memory Sequence — non-scored, forgiving | `src/pages/Activity.tsx`, `src/games/*` |
-| **Living Memory Garden**: a koi pond that swims calmly after right answers and darts faster and more erratically after wrong ones, the way startled fish actually move, plus the existing flower/rain garden that reflects how a session felt overall | `src/components/PondScene.tsx`, `src/games/pondMood.ts`, `src/games/pondSim.ts`, `src/pages/Garden.tsx` |
-| State store (persisted to localStorage) | `src/store/useApp.ts` |
-| Design tokens (mint/teal palette, 56px+ tap targets, AAA-contrast text) | `tailwind.config.js`, `src/styles/index.css` |
-| Local Groq API proxy; keeps the API key server-side | `server/index.js` |
+## Local data and backend
 
-## How the pond works
+The app uses a local SQLite-backed server in the `server/` folder and stores data under `data/`.
 
-Each right or wrong answer is logged with the game (`src/pages/Activity.tsx`). `pondMoodFromEvents` (`src/games/pondMood.ts`) turns the last few answers into a mood from -1 (recent mistakes) to +1 (recent successes), weighting the most recent answers more heavily so an old rough patch fades rather than lingering. `pondSim.ts` runs a small physics simulation — each fish steers gradually toward a wandering target rather than snapping between points — and mood scales the fish's speed and turning noise: calm and slow when things are going well, faster and more erratic when they aren't. It's purely a feel-good visual cue, never shown as a number or score, and it respects `prefers-reduced-motion`.
+Important details:
 
-## Notes
+- `data/anchor.sqlite` is used for local durable storage
+- migrations are applied automatically on startup
+- structured person, memory, session, and interaction data are persisted locally
+- the app keeps activity events and retry logic for backend sync
+- local media references are retained while backend data remains designed for local-only use during development
 
-- **Voice input** uses the browser's Web Speech API: works in Chrome/Edge/Safari, not Firefox. Typing always works as a fallback. It needs `localhost` or HTTPS and microphone permission.
-- Mo can answer general questions and uses caregiver-entered details and memories for personal questions. It never invents personal facts, diagnoses, or gives medical instructions; health concerns should go to a trusted caregiver or clinician.
-- The app stores profile, memories, and chat in browser localStorage. Chat context and a bounded text-only memory summary are sent to Groq through the local server when asking Mo. Keep `.env` private; it is ignored by Git and the API key is never sent to the browser.
-- If the API key is missing or Groq is unavailable, Mo says that it cannot connect rather than silently switching to canned answers.
-- The assistant **logs interaction signals** (`help_request`, `speech_cue`, `response_submitted` with correctness) into the store. Part 3 consumes these for frustration/confusion estimation.
+This project is intended for local development and testing, not for production deployment or account-backed secure use.
+
+## Useful commands
+
+```bash
+npm test
+npm run typecheck
+npm run build
+npm run preview
+npm run server
+```
+
+## Project notes
+
+- The app stores profile, memories, and chat in browser state and local storage patterns suitable for development and prototype use.
+- The assistant sends a bounded memory summary and recent conversation to the local Groq proxy when needed.
+- If Groq is unavailable or the API key is missing, the app handles this gracefully rather than silently pretending it can answer.
+- Anchor is a research and prototype app. It is designed to be supportive and accessible, but it is not a medical device or a diagnostic tool.
+
+## Repository summary
+
+This repo contains:
+
+- the React + TypeScript front end in `src/`
+- local server logic in `server/`
+- SQLite database logic in `server/db/`
+- memory and assessment repositories in `server/repositories/`
+- tests across assistant, UI, and game flows
 
 ## Roadmap
 
-**Part 3 — Adaptive loop**
-Frustration/confusion state estimation (the five states from the Lab 4 report), Whisper transcription, adaptive responses (simplify, calming activity, break), biweekly assessment, and privacy/consent.
+Current work focuses on finishing the memory support loop, refining the assistant experience, and making the game flow feel consistent and calm across all activities. Future work includes more adaptive behaviour, richer assessments, and deeper personalization based on the user’s interaction patterns.
 
-## GitHub repo settings
+## GitHub metadata
 
 **About:** Personalised memory games and a gentle AI assistant for people with early-stage dementia.
 

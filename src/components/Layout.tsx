@@ -3,7 +3,6 @@ import { Outlet } from 'react-router-dom'
 import BottomNav from './BottomNav'
 import AssistantBar from './AssistantBar'
 import AssistantPanel from './AssistantPanel'
-import VoicePrivacyControl from './VoicePrivacyControl'
 import VoiceAwarenessController from '@/assistant/VoiceAwarenessController'
 import { useApp } from '@/store/useApp'
 import { useInactivityNudge } from '@/assistant/useInactivityNudge'
@@ -51,7 +50,6 @@ export default function Layout() {
         {(dataSyncStatus === 'offline' || dataSyncStatus === 'error') && (
           <p className="px-4 py-1 text-center text-xs text-ink/65" aria-live="polite">{dataSyncMessage}</p>
         )}
-        <VoicePrivacyControl />
         <AssistantBar />
         <BottomNav />
         <AssistantPanel />

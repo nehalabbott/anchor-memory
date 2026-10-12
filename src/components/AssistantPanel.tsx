@@ -1,10 +1,10 @@
 import { useEffect, useRef, useState } from 'react'
 import { useLocation } from 'react-router-dom'
-import { Mic, Send, X, Volume2, VolumeX, Lightbulb, Star, Leaf, HeartHandshake, ShieldAlert } from 'lucide-react'
+import { Send, X, Volume2, VolumeX, Lightbulb, Star, Leaf, HeartHandshake, ShieldAlert } from 'lucide-react'
 import { useApp } from '@/store/useApp'
 import { useScreenContext } from '@/store/useScreenContext'
 import { brain, detectStruggle } from '@/assistant/brain'
-import { canListen, listen, speak, stopSpeaking, type Listener } from '@/assistant/speech'
+import { speak, stopSpeaking } from '@/assistant/speech'
 import { screenLabel } from '@/lib/routes'
 import { getSafeAssistantPersonalization } from '@/lib/personalization'
 
@@ -17,12 +17,8 @@ export default function AssistantPanel() {
       assistantSpeakFirst, clearAssistantSpeakFirst, privacyShieldEnabled } = useApp()
   const loc = useLocation()
   const [text, setText] = useState('')
-  const [listening, setListening] = useState(false)
   const [thinking, setThinking] = useState(false)
   const [notice, setNotice] = useState('')
-  const recRef = useRef<Listener | null>(null)
-  const restartTimerRef = useRef<number | null>(null)
-  const waitingForReplyRef = useRef(false)
   const endRef = useRef<HTMLDivElement>(null)
   const inputRef = useRef<HTMLInputElement>(null)
 
@@ -33,22 +29,11 @@ export default function AssistantPanel() {
     }
     if (assistantOpen && window.matchMedia?.('(pointer: fine)').matches) inputRef.current?.focus()
     if (!assistantOpen) {
-      waitingForReplyRef.current = false
-      recRef.current?.stop()
-      recRef.current = null
-      if (restartTimerRef.current !== null) {
-        window.clearTimeout(restartTimerRef.current)
-        restartTimerRef.current = null
-      }
       stopSpeaking()
-      setListening(false)
     }
   }, [assistantOpen])
 
   useEffect(() => () => {
-    if (restartTimerRef.current !== null) window.clearTimeout(restartTimerRef.current)
-    recRef.current?.stop()
-    recRef.current = null
     stopSpeaking()
   }, [])
 
@@ -68,16 +53,11 @@ export default function AssistantPanel() {
     clearAssistantSpeakFirst()
     if (chat.length === 0) addChat({ role: 'assistant', text: `Hi ${userName}, I'm Mo.` })
     addChat({ role: 'assistant', text: message })
-    if (speechEnabled) speak(message, 'en-IN', () => beginListening(true))
-    else beginListening(true)
+    if (speechEnabled) speak(message, 'en-IN')
   }, [assistantOpen, assistantSpeakFirst])
 
   useEffect(() => {
     if (!privacyShieldEnabled) return
-    waitingForReplyRef.current = false
-    recRef.current?.stop()
-    recRef.current = null
-    setListening(false)
     setNotice('Mic Off / Private. Turn off Privacy Shield before using voice input.')
   }, [privacyShieldEnabled])
 
@@ -121,51 +101,6 @@ export default function AssistantPanel() {
     setThinking(false)
     addChat({ role: 'assistant', text: reply })
     if (speechEnabled) speak(reply)
-  }
-
-  function beginListening(waitForReply = false) {
-    if (useApp.getState().privacyShieldEnabled) {
-      waitingForReplyRef.current = false
-      setNotice('Mic Off / Private. Turn off Privacy Shield before using voice input.')
-      return
-    }
-    if (waitForReply && !useApp.getState().assistantOpen) return
-    waitingForReplyRef.current = waitForReply
-    stopSpeaking(); setNotice('')
-    setListening(true)
-    recRef.current = listen({
-      onText: (t, final) => {
-        setText(t)
-        if (final) {
-          waitingForReplyRef.current = false
-          setListening(false)
-          send(t)
-        }
-      },
-      onEnd: () => {
-        if (waitingForReplyRef.current && useApp.getState().assistantOpen) {
-          restartTimerRef.current = window.setTimeout(() => {
-            restartTimerRef.current = null
-            if (waitingForReplyRef.current && useApp.getState().assistantOpen) beginListening(true)
-          }, 250)
-        } else setListening(false)
-      },
-      onError: (m) => {
-        waitingForReplyRef.current = false
-        setNotice(m)
-        setListening(false)
-      },
-    })
-  }
-
-  function toggleMic() {
-    if (listening) {
-      waitingForReplyRef.current = false
-      recRef.current?.stop()
-      setListening(false)
-      return
-    }
-    beginListening()
   }
 
   function quick(kind: 'clue' | 'easier' | 'break', contextualPrompt?: string) {
@@ -238,18 +173,11 @@ export default function AssistantPanel() {
         <form className="px-4 pb-5 pt-1 flex items-center gap-2" onSubmit={(e) => { e.preventDefault(); send(text) }}>
           <label htmlFor="mo-input" className="sr-only">Message to Mo</label>
           <input id="mo-input" ref={inputRef} value={text} onChange={(e) => setText(e.target.value)}
-            placeholder={listening ? 'Listening…' : 'Ask Mo anything…'}
+            placeholder="Ask Mo anything…"
             className="flex-1 min-h-[56px] rounded-pill bg-white border-2 border-mint-200 px-5 text-lg" />
-          {text.trim() ? (
-            <button type="submit" aria-label="Send" className="w-14 h-14 rounded-full bg-garden-600 text-white flex items-center justify-center"><Send size={22} /></button>
-          ) : (
-            <button type="button" onClick={toggleMic} aria-pressed={listening} disabled={privacyShieldEnabled}
-              aria-label={privacyShieldEnabled ? 'Mic Off / Private' : listening ? 'Stop listening' : canListen ? 'Speak to Mo' : 'Voice not supported'}
-              className={`relative w-14 h-14 rounded-full text-white flex items-center justify-center disabled:cursor-not-allowed ${canListen && !privacyShieldEnabled ? 'bg-garden-600' : 'bg-ink/30'}`}>
-              {listening && <span className="absolute inset-0 rounded-full bg-garden-500 animate-pulseRing" aria-hidden />}
-              <Mic size={24} className="relative" />
-            </button>
-          )}
+          <button type="submit" aria-label="Send" className="w-14 h-14 rounded-full bg-garden-600 text-white flex items-center justify-center disabled:opacity-60" disabled={!text.trim()}>
+            <Send size={22} />
+          </button>
         </form>
       </section>
     </div>

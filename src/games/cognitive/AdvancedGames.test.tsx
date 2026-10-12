@@ -43,11 +43,22 @@ describe('advanced cognitive games', () => {
     expect(useApp.getState().events.some((event) => event.type === 'response_submitted' && event.activityId === 'trail-making')).toBe(true)
   })
 
+  it('shows a back action in each advanced game so players can leave without finishing', () => {
+    const { rerender } = render(<MemoryRouter><DualNBackGame /></MemoryRouter>)
+    expect(screen.getByRole('button', { name: /back to games/i })).toBeInTheDocument()
+
+    rerender(<MemoryRouter><TrailMakingGame /></MemoryRouter>)
+    expect(screen.getByRole('button', { name: /back to games/i })).toBeInTheDocument()
+
+    rerender(<MemoryRouter><CategoryAssociationGame /></MemoryRouter>)
+    expect(screen.getByRole('button', { name: /back to games/i })).toBeInTheDocument()
+  })
+
   it('selects a correct category association with memory personalization and falls back generically when memories are empty', () => {
     render(<MemoryRouter><CategoryAssociationGame /></MemoryRouter>)
     fireEvent.click(screen.getByRole('button', { name: 'Start playing' }))
-    const buttons = screen.getAllByRole('button')
-    const firstChoice = buttons.find((button) => button.textContent && /watering can|marigold|teapot|cake|song|dance|Anita|Rahul/i.test(button.textContent))
+    const buttons = screen.getAllByRole('button').filter((button) => !/back to games/i.test(button.textContent ?? ''))
+    const firstChoice = buttons.find((button) => button.textContent && !/start playing|play again/i.test(button.textContent))
     expect(firstChoice).toBeTruthy()
     if (!firstChoice) throw new Error('No category option was rendered')
     fireEvent.click(firstChoice)

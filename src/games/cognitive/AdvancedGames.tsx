@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
-import { Brain, Route, Sparkles, Tags } from 'lucide-react'
+import { useNavigate } from 'react-router-dom'
+import { Brain, ChevronLeft, Route, Sparkles, Tags } from 'lucide-react'
 import { useAdaptiveDifficulty } from '@/hooks/useAdaptiveDifficulty'
 import { createActivitySession, finishActivitySession, recordActivityEvent } from '@/lib/sessionPersistence'
 import type { ActivityId, InteractionEvent, MemoryItem, Part2InteractionEvent } from '@/lib/types'
@@ -249,6 +250,59 @@ function useSessionGame(activityId: ActivityId, onLevelChange?: (change: { previ
   return { session, adaptive, startedRef, promptStartedAt, begin, record, submitResponse } as const
 }
 
+function HowToPlayVisual({ variant }: { variant: 'dual-n-back' | 'trail-making' | 'category-association' }) {
+  if (variant === 'dual-n-back') {
+    return (
+      <div className="rounded-2xl border border-mint-200 bg-white p-3">
+        <div className="grid grid-cols-3 gap-2">
+          {Array.from({ length: 9 }).map((_, index) => (
+            <div key={index} className={`flex h-12 items-center justify-center rounded-xl border-2 ${index === 4 ? 'border-garden-700 bg-mint-100' : 'border-mint-200 bg-mint-50'}`}>
+              {index === 4 ? '●' : index + 1}
+            </div>
+          ))}
+        </div>
+      </div>
+    )
+  }
+
+  if (variant === 'trail-making') {
+    return (
+      <div className="rounded-2xl border border-mint-200 bg-white p-3">
+        <div className="relative h-24 w-full rounded-xl bg-mint-50">
+          <span className="absolute left-[12%] top-[52%] flex h-8 w-8 items-center justify-center rounded-full border-2 border-garden-600 bg-white">1</span>
+          <span className="absolute left-[35%] top-[18%] flex h-8 w-8 items-center justify-center rounded-full border-2 border-garden-600 bg-white">A</span>
+          <span className="absolute left-[58%] top-[52%] flex h-8 w-8 items-center justify-center rounded-full border-2 border-garden-600 bg-white">2</span>
+          <span className="absolute right-[15%] top-[25%] flex h-8 w-8 items-center justify-center rounded-full border-2 border-garden-600 bg-white">B</span>
+        </div>
+      </div>
+    )
+  }
+
+  return (
+    <div className="grid grid-cols-2 gap-2 rounded-2xl border border-mint-200 bg-white p-3">
+      {['flower', 'flower', 'flower', 'cup'].map((glyph, index) => (
+        <div key={`${glyph}-${index}`} className="flex h-12 items-center justify-center rounded-xl border-2 border-garden-600 bg-mint-50 text-garden-900">
+          {glyph === 'cup' ? '☕' : '🌼'}
+        </div>
+      ))}
+    </div>
+  )
+}
+
+function BackToGamesButton() {
+  const navigate = useNavigate()
+  return (
+    <button
+      type="button"
+      aria-label="Back to games"
+      onClick={() => navigate('/games')}
+      className="flex h-14 w-14 shrink-0 items-center justify-center rounded-full border border-mint-200 bg-white text-garden-900 shadow-soft transition active:scale-[.98]"
+    >
+      <ChevronLeft size={28} />
+    </button>
+  )
+}
+
 export function DualNBackGame() {
   const { memories } = useApp()
   const setGameContext = useScreenContext((state) => state.setGameContext)
@@ -327,7 +381,10 @@ export function DualNBackGame() {
 
   return (
     <section className="card p-5">
-      <h2 className="text-2xl font-display">Dual N-Back</h2>
+      <div className="mb-4 flex items-center gap-3">
+        <BackToGamesButton />
+        <h2 className="text-2xl font-display">Dual N-Back</h2>
+      </div>
       {!started ? (
         <div className="mt-4">
           <HowToPlayCard
@@ -335,6 +392,7 @@ export function DualNBackGame() {
             description="Working memory"
             instructions={`Watch the tile that lights up on the grid. Tap "Match" if it is in the same spot as the tile from ${round.n} turns earlier, or "No Match" if it is not.`}
             example="If the lit tile is in the same corner it was a few turns ago, that is a match."
+            exampleVisual={<HowToPlayVisual variant="dual-n-back" />}
             onStart={startGame}
           />
         </div>
@@ -441,7 +499,10 @@ export function TrailMakingGame() {
 
   return (
     <section className="card p-5">
-      <h2 className="text-2xl font-display">Trail Making</h2>
+      <div className="mb-4 flex items-center gap-3">
+        <BackToGamesButton />
+        <h2 className="text-2xl font-display">Trail Making</h2>
+      </div>
       {!started ? (
         <div className="mt-4">
           <HowToPlayCard
@@ -449,6 +510,7 @@ export function TrailMakingGame() {
             description="Executive function"
             instructions="Tap the circles in order: 1, then A, then 2, then B, and so on, counting and spelling as you go."
             example="Start by tapping the circle marked 1."
+            exampleVisual={<HowToPlayVisual variant="trail-making" />}
             onStart={handleStart}
           />
         </div>
@@ -556,7 +618,10 @@ export function CategoryAssociationGame() {
 
   return (
     <section className="card p-5">
-      <h2 className="text-2xl font-display">Category Association</h2>
+      <div className="mb-4 flex items-center gap-3">
+        <BackToGamesButton />
+        <h2 className="text-2xl font-display">Category Association</h2>
+      </div>
       {!started ? (
         <div className="mt-4">
           <HowToPlayCard
@@ -564,6 +629,7 @@ export function CategoryAssociationGame() {
             description="Language"
             instructions="Look at the group name, then tap the item below that belongs with it."
             example="If the group is gardening, choose a watering can rather than a teapot."
+            exampleVisual={<HowToPlayVisual variant="category-association" />}
             onStart={handleStart}
           />
         </div>

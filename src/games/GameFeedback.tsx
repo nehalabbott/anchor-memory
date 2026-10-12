@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useRef, useState, type ReactNode } from 'react'
 import { AlertCircle, CheckCircle2, Volume2 } from 'lucide-react'
 
 /**
@@ -11,13 +11,15 @@ export function HowToPlayCard({
   description,
   instructions,
   example,
+  exampleVisual,
   onStart,
   startLabel = 'Start playing',
 }: {
   title: string
   description: string
   instructions: string
-  example?: string
+  example?: string | ReactNode
+  exampleVisual?: ReactNode
   onStart: () => void
   startLabel?: string
 }) {
@@ -51,7 +53,12 @@ export function HowToPlayCard({
       <div className="mt-4 rounded-2xl border-2 border-mint-200 bg-mint-50 p-4">
         <p className="text-lg font-semibold text-garden-900">How to play</p>
         <p className="mt-2 text-lg leading-relaxed text-ink/85">{instructions}</p>
-        {example && <p className="mt-2 text-base text-ink/70">{example}</p>}
+        {exampleVisual && <div className="mt-3">{exampleVisual}</div>}
+        {example && (
+          typeof example === 'string'
+            ? <p className="mt-2 text-base text-ink/70">{example}</p>
+            : <div className="mt-2 text-base text-ink/70">{example}</div>
+        )}
       </div>
       <div className="mt-4 grid gap-3">
         <button

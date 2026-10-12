@@ -1,6 +1,7 @@
 import { useEffect, useRef } from 'react'
 import { useLocation } from 'react-router-dom'
 import { useApp } from '@/store/useApp'
+import { useScreenContext } from '@/store/useScreenContext'
 import { NUDGE_DELAY_MS, HINT_DELAY_MS, silenceHint } from './brain'
 
 const ACTIVITY_EVENTS: (keyof WindowEventMap)[] = ['pointerdown', 'keydown', 'touchstart', 'wheel']
@@ -36,9 +37,10 @@ export function useInactivityNudge() {
 
       hintTimer.current = setTimeout(() => {
         const { assistantOpen: alreadyOpen, userName, memories, openAssistantWithMessage, logEvent } = useApp.getState()
+        const screenLabel = useScreenContext.getState().screen || 'this screen'
         if (alreadyOpen) return
         logEvent({ type: 'help_request', at: Date.now() })
-        openAssistantWithMessage(silenceHint(userName, memories))
+        openAssistantWithMessage(silenceHint(userName, memories, screenLabel))
       }, HINT_DELAY_MS)
     }
 

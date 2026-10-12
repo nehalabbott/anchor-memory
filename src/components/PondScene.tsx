@@ -25,7 +25,7 @@ const ENERGY_COPY: Record<PondEnergy, string> = {
  * snapping between CSS keyframes. Purely decorative feedback: never shown as a score, and it
  * settles back to a calm glide on its own once a few right answers come in.
  */
-export default function PondScene({ className = '' }: { className?: string }) {
+export default function PondScene({ className = '', label }: { className?: string; label?: string }) {
   const events = useApp((s) => s.events)
   const mood = useMemo(() => pondMoodFromEvents(events), [events])
   const energy = pondEnergyFromMood(mood)
@@ -54,7 +54,7 @@ export default function PondScene({ className = '' }: { className?: string }) {
     <section
       className={`relative overflow-hidden rounded-card border-2 border-garden-700 ${className}`}
       role="img"
-      aria-label={`A koi pond. ${ENERGY_COPY[energy]}`}
+      aria-label={label ?? `A koi pond. ${ENERGY_COPY[energy]}`}
     >
       <div
         className="absolute inset-0 transition-colors duration-[2000ms]"

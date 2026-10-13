@@ -4,33 +4,37 @@ To do: (Tasks left)
 2. add personalization (stuff the person likes in games and all)
 3. frustration detection (vocal/visual/screen)
 
-> Personalised memory games and a gentle AI assistant for older adults with early-stage dementia.
 
-Anchor is a senior-friendly app designed to support memory recall, confidence, and calm engagement through a small set of personalised activities. A caregiver can add memories, names, routines, and stories; the app turns them into gentle, familiar games. A voice-enabled assistant called Mo responds with prompts, simpler hints, and supportive breaks when the person seems stuck or overwhelmed.
+**Personalised memory games and a gentle AI assistant for older adults with early-stage dementia.**
 
-This project uses a high-contrast, low-pressure design with large touch targets, simple language, and no score-based pressure. It is intended as a supportive memory tool, not a diagnosis or medical assessment.
+Anchor is a senior-friendly application designed to support memory recall, confidence, and calm engagement through personalised activities. Caregivers can add memories, names, routines, and stories, which are used to create familiar memory games. A voice-enabled assistant named **Mo** provides prompts, simpler hints, and supportive breaks when users need help.
 
-## Current app structure
+The application uses a high-contrast, low-pressure interface with large touch targets and simple language. It is intended as a supportive memory tool, not a diagnostic or medical assessment tool.
 
-The app now follows a simple three-part flow:
+## Problem Statement
 
-- Memories: add and review memories, people, routines, and meaningful details
-- Games: play seven memory-based activities, from simple recognition tasks to more demanding working-memory exercises
-- Memory Aquarium: a calm reflective place that responds to recent activity and mood
+Older adults with early-stage dementia may experience difficulties recalling familiar people, events, and routines. Generic cognitive games may lack personal relevance, while complex interfaces and score-based feedback can create frustration. Anchor aims to make memory activities more familiar, accessible, and emotionally supportive through personalisation and gentle assistance.
 
-The app intentionally keeps older routes for compatibility while redirecting to this modern flow.
+## Objectives
 
-## What is included
+- Provide personalised memory games using caregiver-provided memories and meaningful details.
+- Support memory recall through familiar people, routines, stories, and visual cues.
+- Offer voice-enabled assistance with hints, simpler instructions, and breaks.
+- Create a calm, accessible experience without score-based pressure.
+- Explore adaptive responses to signs of frustration during activities.
+- Encourage engagement through a reflective Memory Aquarium.
 
-### Memory capture and personalisation
+## Current Features
 
-- Caregiver memory profile with names, relationships, stories, and important details
-- Personalised prompts and clues drawn from saved memories
-- Gentle, non-judgmental activity flow with retry and easier help options
+### 1. Memories and Personalisation
 
-### Games
+- Caregiver-managed memory profiles containing names, relationships, stories, and important details.
+- Personalised prompts and clues based on saved memories.
+- Retry options and easier hints to support users who need additional help.
 
-The activity library includes both easy and more advanced cognitive games:
+### 2. Memory Games
+
+The application includes seven activities:
 
 - Familiar Faces
 - Pattern & Shape Match
@@ -40,53 +44,85 @@ The activity library includes both easy and more advanced cognitive games:
 - Trail Making
 - Category Association
 
-The simple games include feedback states, retry paths, and clearer correct/incorrect cues. The last three advanced games include a consistent Back to games action so a user can leave without feeling stuck.
+Games include feedback, retry options, and navigation designed to help users leave an activity without feeling stuck.
 
-### Memory Aquarium
+### 3. Memory Aquarium
 
-The garden view has been renamed to Memory Aquarium and is intended as a calm reflection area rather than a decorative garden section. It reflects recent game experience through mood and movement, without presenting a numeric score or judgment.
+Memory Aquarium is a calm reflection space that responds to recent activity and mood. It is designed to encourage reflection without displaying numeric scores or judgmental feedback.
 
-### Assistant and voice support
+### 4. Voice-Enabled Assistant — Mo
 
-- Persistent assistant bar and panel
-- Voice input and spoken responses via the browser Web Speech API
-- Quick actions such as clue, easier version, and break
-- Context-aware guidance using recent conversation, current screen, and memory summaries
-- Safety-first responses that avoid diagnosis and redirect to trusted carers or clinicians when needed
+- Voice input and spoken responses using the browser Web Speech API.
+- Quick actions for hints, easier versions, and breaks.
+- Context-aware guidance using the current screen, recent conversation, and memory summaries.
+- Supportive responses that avoid diagnosis and encourage contacting trusted caregivers or clinicians when appropriate.
 
-## Run locally
+## Pending Improvements
 
-Requires Node 20.17+.
+The following features remain under development:
 
-```bash
-npm install
-cp .env.example .env
-```
+1. **Memory Aquarium sound:** Add suitable ambient sounds and optional sound controls to improve the reflective experience.
+2. **Deeper personalisation:** Adapt games, themes, images, objects, and activities to the user's interests and preferences.
+3. **Frustration detection:** Explore vocal, visual, and interaction-based indicators of possible frustration and respond with appropriate hints or breaks.
 
-Set `GROQ_API_KEY` in `.env`, then run the app in separate terminals:
+These features will be implemented and evaluated as part of the ongoing development process.
 
-```bash
-npm run server
-npm run dev
-```
+## Technologies Used
 
-The app runs in the browser at http://localhost:5173. The local proxy serves the AI assistant on port 8787.
+- **Frontend:** React, TypeScript
+- **Development tools:** Node.js, npm
+- **AI assistant:** Groq API through a local proxy server
+- **Voice interaction:** Browser Web Speech API
+- **Backend:** Local Node.js server
+- **Database:** SQLite
+- **Testing:** npm test, TypeScript type checking
+- **Version control:** Git and GitHub
 
-## Local data and backend
+## Application Structure
 
-The app uses a local SQLite-backed server in the `server/` folder and stores data under `data/`.
+- `src/` — React and TypeScript frontend
+- `server/` — Local server logic
+- `server/db/` — Database logic and migrations
+- `server/repositories/` — Data repositories
+- `public/` — Static assets
+- `data/` — Local development data
 
-Important details:
+## Setup and Installation
 
-- `data/anchor.sqlite` is used for local durable storage
-- migrations are applied automatically on startup
-- structured person, memory, session, and interaction data are persisted locally
-- the app keeps activity events and retry logic for backend sync
-- local media references are retained while backend data remains designed for local-only use during development
+**Prerequisites:** Node.js 20.17 or later and npm.
 
-This project is intended for local development and testing, not for production deployment or account-backed secure use.
+1. Clone the repository and switch to the development branch:
 
-## Useful commands
+   ```bash
+   git clone https://github.com/nehalabbott/anchor-memory.git
+   cd anchor-memory
+   git checkout update-codebase
+   ```
+
+2. Install dependencies and configure the environment:
+
+   ```bash
+   npm install
+   cp .env.example .env
+   ```
+
+3. Add your `GROQ_API_KEY` to `.env`.
+
+4. Start the application in separate terminals:
+
+   ```bash
+   npm run server
+   ```
+
+   ```bash
+   npm run dev
+   ```
+
+5. Open [http://localhost:5173](http://localhost:5173) in your browser.
+
+The frontend communicates with the local proxy server for AI assistant functionality.
+
+## Useful Commands
 
 ```bash
 npm test
@@ -96,29 +132,37 @@ npm run preview
 npm run server
 ```
 
-## Project notes
+## Data and Privacy
 
-- The app stores profile, memories, and chat in browser state and local storage patterns suitable for development and prototype use.
-- The assistant sends a bounded memory summary and recent conversation to the local Groq proxy when needed.
-- If Groq is unavailable or the API key is missing, the app handles this gracefully rather than silently pretending it can answer.
-- Anchor is a research and prototype app. It is designed to be supportive and accessible, but it is not a medical device or a diagnostic tool.
+Anchor uses a local SQLite database at `data/anchor.sqlite` for persistent development data. Database migrations run automatically on server startup. Profile, memory, session, and interaction data are managed locally during development.
 
-## Repository summary
+The AI assistant sends a limited memory summary and recent conversation to the local Groq proxy when required. Users should avoid entering unnecessary sensitive information. The current prototype is intended for local development and testing, not production deployment or secure, account-backed use.
 
-This repo contains:
+## Team Members
 
-- the React + TypeScript front end in `src/`
-- local server logic in `server/`
-- SQLite database logic in `server/db/`
-- memory and assessment repositories in `server/repositories/`
-- tests across assistant, UI, and game flows
+- [Add team member name 1]
+- [Add team member name 2]
+- [Add team member name 3]
+- [Add team member name 4]
 
-## Roadmap
+*Replace the placeholders with your actual team members and contributions.*
 
-Current work focuses on finishing the memory support loop, refining the assistant experience, and making the game flow feel consistent and calm across all activities. Future work includes more adaptive behaviour, richer assessments, and deeper personalization based on the user’s interaction patterns.
+## Future Scope
 
-## GitHub metadata
+- Complete ambient audio and sound controls in Memory Aquarium.
+- Expand preference-based personalisation across games.
+- Evaluate multimodal frustration indicators and appropriate supportive responses.
+- Improve accessibility, usability, and consistency across activities.
+- Evaluate the prototype with appropriate usability and accessibility methods.
 
-**About:** Personalised memory games and a gentle AI assistant for people with early-stage dementia.
+## Disclaimer
 
-**Topics:** `dementia` `cognitive-training` `accessibility` `hci` `react` `typescript` `assistive-technology` `speech-recognition` `serious-games` `elderly-care`
+Anchor is a research and HCI prototype intended to support memory-related activities and engagement. It does not diagnose, treat, or replace professional medical care.
+
+## Repository
+
+GitHub: https://github.com/nehalabbott/anchor-memory
+
+**GitHub description:** Personalised memory games and a gentle AI assistant for older adults with early-stage dementia.
+
+**Suggested topics:** `dementia` `cognitive-training` `accessibility` `hci` `react` `typescript` `assistive-technology` `speech-recognition` `serious-games` `elderly-care`

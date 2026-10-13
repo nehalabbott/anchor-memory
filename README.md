@@ -140,12 +140,8 @@ The AI assistant sends a limited memory summary and recent conversation to the l
 
 ## Team Members
 
-- [Add team member name 1]
-- [Add team member name 2]
-- [Add team member name 3]
-- [Add team member name 4]
-
-*Replace the placeholders with your actual team members and contributions.*
+-Nehal Abbott
+-Sonu 
 
 ## Future Scope
 
@@ -163,6 +159,3 @@ Anchor is a research and HCI prototype intended to support memory-related activi
 
 GitHub: https://github.com/nehalabbott/anchor-memory
 
-**GitHub description:** Personalised memory games and a gentle AI assistant for older adults with early-stage dementia.
-
-**Suggested topics:** `dementia` `cognitive-training` `accessibility` `hci` `react` `typescript` `assistive-technology` `speech-recognition` `serious-games` `elderly-care`

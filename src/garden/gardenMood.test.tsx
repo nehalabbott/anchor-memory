@@ -51,6 +51,12 @@ describe('garden rendering', () => {
     expect(screen.getByRole('img', { name: /A peaceful aquarium|A quiet memory aquarium|A bright memory aquarium/i })).toBeInTheDocument()
   })
 
+  it('uses the profile name in sample story cards when there are no saved memories', () => {
+    useApp.setState({ supportedPerson: { ...useApp.getState().supportedPerson, name: 'Priya' } })
+    render(<MemoryRouter><Garden /></MemoryRouter>)
+    expect(screen.getByText(/Anita calls Priya every Sunday morning/)).toBeInTheDocument()
+  })
+
   it('uses aquarium-specific mood wording', () => {
     render(<MemoryRouter><Garden /></MemoryRouter>)
     expect(screen.getByText(/Aquarium mood:/i)).toBeInTheDocument()

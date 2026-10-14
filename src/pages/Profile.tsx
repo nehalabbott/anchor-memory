@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef } from 'react'
+import { useEffect, useMemo, useRef, useState, type FormEvent } from 'react'
 import { Link } from 'react-router-dom'
 import PageHeader from '@/components/PageHeader'
 import { gardenStateFor } from '@/games/gardenState'
@@ -8,6 +8,8 @@ import { DEFAULT_PERSONAL_PREFERENCES, normalizePersonalPreferences } from '@/li
 
 export default function Profile() {
   const { memories, lastSessionExperience, largeText, setLargeText, speechEnabled, setSpeechEnabled, supportedPerson, preferences, setPreferences } = useApp()
+  const [personName, setPersonName] = useState(supportedPerson.name)
+  const [personNotice, setPersonNotice] = useState('')
   const gardenState = gardenStateFor(lastSessionExperience, memories.length)
   const safePreferences = useMemo(() => normalizePersonalPreferences(preferences ?? DEFAULT_PERSONAL_PREFERENCES), [preferences])
   const lastSavedPreferences = useRef<string | null>(null)
@@ -19,6 +21,26 @@ export default function Profile() {
     void savePreferences(safePreferences).catch(() => undefined)
   }, [safePreferences])
 
+  useEffect(() => {
+    setPersonName(supportedPerson.name)
+  }, [supportedPerson.name])
+
+  async function saveName(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault()
+    const name = personName.trim()
+    if (!name) {
+      setPersonNotice('Please enter a name.')
+      return
+    }
+    try {
+      const result = await savePersonDetails({ name, personalDetails: supportedPerson.personalDetails })
+      setPersonName(result.value.name)
+      setPersonNotice(result.persistence === 'device' ? 'Name saved on this device; it will sync when connected.' : 'Name saved.')
+    } catch {
+      setPersonNotice('Name could not be saved. Please try again.')
+    }
+  }
+
   return (
     <>
       <PageHeader title="My Journey" />
@@ -26,6 +48,21 @@ export default function Profile() {
       <section className="mt-6 card p-4" aria-labelledby="profile-person-heading">
         <h2 id="profile-person-heading" className="text-xl">Person using Anchor</h2>
         <p className="mt-1 text-ink/75">Keep their details separate from the memories and activities they enjoy.</p>
+
+        <form onSubmit={(event) => void saveName(event)} className="mt-4">
+          <label className="block" htmlFor="profile-person-name">
+            <span className="font-semibold">Name</span>
+            <input
+              id="profile-person-name"
+              value={personName}
+              onChange={(event) => { setPersonName(event.target.value); setPersonNotice('') }}
+              required
+              className="mt-1 min-h-[56px] w-full rounded-xl border-2 border-mint-200 bg-white px-4"
+            />
+          </label>
+          <button type="submit" className="mt-3 min-h-[48px] rounded-xl bg-garden-700 px-4 font-semibold text-white">Save name</button>
+          {personNotice && <p role="status" className="mt-2 text-sm text-garden-900">{personNotice}</p>}
+        </form>
 
         <label className="mt-4 block">
           <span className="font-semibold">Helpful personal details</span>

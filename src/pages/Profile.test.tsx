@@ -42,6 +42,19 @@ describe('Profile Part 2 connections', () => {
     expect(await screen.findByRole('heading', { name: 'Memory Aquarium' })).toBeInTheDocument()
   })
 
+  it('lets the person using Anchor change and save their name', async () => {
+    const user = userEvent.setup()
+    mountProfile()
+
+    const nameInput = screen.getByRole('textbox', { name: 'Name' })
+    await user.clear(nameInput)
+    await user.type(nameInput, 'Priya')
+    await user.click(screen.getByRole('button', { name: 'Save name' }))
+
+    expect(useApp.getState().supportedPerson.name).toBe('Priya')
+    expect(screen.getByRole('status')).toHaveTextContent('Name saved')
+  })
+
   it('opens the shared Mo assistant from A Helping Hand', async () => {
     const user = userEvent.setup()
     mountProfile()

@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom'
 import { Camera, Mic, Pencil, Plus, Trash2 } from 'lucide-react'
 import PageHeader from '@/components/PageHeader'
 import { MemoryAudio, MemoryPhoto } from '@/components/MemoryMedia'
-import { DEMO_MEMORIES, DEMO_PERSON } from '@/demo/demoData'
+import { demoMemoriesFor, DEMO_PERSON } from '@/demo/demoData'
 import { mediaRepository } from '@/lib/mediaRepository'
 import type { MediaReference, MemoryEvent, MemoryItem, MemoryKind, Relationship } from '@/lib/types'
 import { useApp } from '@/store/useApp'
@@ -139,10 +139,11 @@ export default function Memories() {
 
   async function loadDemo() {
     try {
-      const personResult = await savePersonDetails({ name: DEMO_PERSON.name, personalDetails: DEMO_PERSON.personalDetails })
-      setPersonName(DEMO_PERSON.name)
+      const profileName = supportedPerson.name.trim() || personName.trim()
+      const personResult = await savePersonDetails({ name: profileName, personalDetails: DEMO_PERSON.personalDetails })
+      setPersonName(profileName)
       setPersonalDetails(DEMO_PERSON.personalDetails.join('\n'))
-      for (const memory of DEMO_MEMORIES) await saveMemoryRecord(memory)
+      for (const memory of demoMemoriesFor(profileName)) await saveMemoryRecord(memory)
       setEditing(null)
       setAdding(false)
       setNotice(`Fictional demo memories loaded${personResult.persistence === 'device' ? ' on this device; they will sync when connected' : ''}. They are sample content, not real patient information.`)

@@ -1,9 +1,18 @@
 import { describe, expect, it } from 'vitest'
 import { gardenStateFor } from './gardenState'
 import { buildCategoryRounds, buildFacePrompts, buildPatternRounds, buildSequenceRounds } from './content'
-import { DEMO_MEMORIES } from '@/demo/demoData'
+import { DEMO_MEMORIES, demoMemoriesFor } from '@/demo/demoData'
 
 describe('distinct personalized cognitive activities', () => {
+  it('uses the profile name in fictional demo stories without changing the shared samples', () => {
+    const personalized = demoMemoriesFor('Priya')
+    const anita = personalized.find((memory) => memory.id === 'fictional-demo-anita')
+
+    expect(anita?.story).toContain('Anita calls Priya')
+    expect(anita?.people).toContain('Priya')
+    expect(DEMO_MEMORIES.find((memory) => memory.id === 'fictional-demo-anita')?.story).toContain('Anita calls Margaret')
+  })
+
   it('uses caregiver people and portraits for face recognition', () => {
     const prompts = buildFacePrompts(DEMO_MEMORIES)
     expect(prompts.map((prompt) => prompt.memory.name)).toContain('Anita')

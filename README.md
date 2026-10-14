@@ -1,10 +1,4 @@
 # Anchor
-To do: (Tasks left)
-1. add sound in memory aquarium
-2. add personalization (stuff the person likes in games and all)
-3. frustration detection (vocal/visual/screen)
-
-
 **Personalised memory games and a gentle AI assistant for older adults with early-stage dementia.**
 
 Anchor is a senior-friendly application designed to support memory recall, confidence, and calm engagement through personalised activities. Caregivers can add memories, names, routines, and stories, which are used to create familiar memory games. A voice-enabled assistant named **Mo** provides prompts, simpler hints, and supportive breaks when users need help.
@@ -61,11 +55,9 @@ Memory Aquarium is a calm reflection space that responds to recent activity and 
 
 The following features remain under development:
 
-1. **Memory Aquarium sound:** Add suitable ambient sounds and optional sound controls to improve the reflective experience.
-2. **Deeper personalisation:** Adapt games, themes, images, objects, and activities to the user's interests and preferences.
-3. **Frustration detection:** Explore vocal, visual, and interaction-based indicators of possible frustration and respond with appropriate hints or breaks.
-
-These features will be implemented and evaluated as part of the ongoing development process.
+1. add sound in memory aquarium
+2. object personalisation in games
+3. frustration detection (vocal/visual/screen)
 
 ## Technologies Used
 
@@ -132,30 +124,9 @@ npm run preview
 npm run server
 ```
 
-## Data and Privacy
-
-Anchor uses a local SQLite database at `data/anchor.sqlite` for persistent development data. Database migrations run automatically on server startup. Profile, memory, session, and interaction data are managed locally during development.
-
-The AI assistant sends a limited memory summary and recent conversation to the local Groq proxy when required. Users should avoid entering unnecessary sensitive information. The current prototype is intended for local development and testing, not production deployment or secure, account-backed use.
-
 ## Team Members
 
 -Nehal Abbott
 -Sonu 
 
-## Future Scope
-
-- Complete ambient audio and sound controls in Memory Aquarium.
-- Expand preference-based personalisation across games.
-- Evaluate multimodal frustration indicators and appropriate supportive responses.
-- Improve accessibility, usability, and consistency across activities.
-- Evaluate the prototype with appropriate usability and accessibility methods.
-
-## Disclaimer
-
-Anchor is a research and HCI prototype intended to support memory-related activities and engagement. It does not diagnose, treat, or replace professional medical care.
-
-## Repository
-
-GitHub: https://github.com/nehalabbott/anchor-memory
 

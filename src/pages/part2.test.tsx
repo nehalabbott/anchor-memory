@@ -42,8 +42,12 @@ describe('Part 2 caregiver and activity flow', () => {
     mount('/memories')
     await user.click(screen.getByRole('button', { name: 'Load fictional demo memories' }))
     expect(useApp.getState().supportedPerson.name).toBe('Margaret')
-    expect(useApp.getState().memories.some((memory) => memory.name === 'Anita')).toBe(true)
+    expect(useApp.getState().memories).toHaveLength(DEMO_MEMORIES.length)
+    expect(useApp.getState().memories.map((memory) => memory.id)).toEqual(expect.arrayContaining(
+      DEMO_MEMORIES.map((memory) => `supported-person-1:${memory.id}`),
+    ))
     expect(useApp.getState().memories.some((memory) => memory.events?.length === 4)).toBe(true)
+    expect(useApp.getState().memories.some((memory) => memory.name === 'A visit to the Basavanagudi market')).toBe(true)
     expect(screen.getByRole('status')).toHaveTextContent('Fictional demo memories loaded')
   })
 

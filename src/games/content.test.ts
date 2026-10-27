@@ -4,12 +4,27 @@ import { buildCategoryRounds, buildFacePrompts, buildPatternRounds, buildSequenc
 import { DEMO_MEMORIES, demoMemoriesFor } from '@/demo/demoData'
 
 describe('distinct personalized cognitive activities', () => {
+  it('includes a complete fictional Indian demo with people, places, and stories', () => {
+    expect(DEMO_MEMORIES).toHaveLength(21)
+    expect(DEMO_MEMORIES.map((memory) => memory.name)).toEqual(expect.arrayContaining([
+      'Kiran', 'Lakshmi', 'A morning walk at Lalbagh', 'A visit to the Basavanagudi market',
+      'A family visit to Udupi', 'A Sunday at Cubbon Park', 'Ugadi at home', 'A slow Sunday breakfast',
+    ]))
+    expect(DEMO_MEMORIES.find((memory) => memory.id === 'fictional-demo-market')?.story).toContain('auto-rickshaw')
+    expect(DEMO_MEMORIES.find((memory) => memory.id === 'fictional-demo-lalbagh')?.places).toContain('Lalbagh Botanical Garden')
+    expect(DEMO_MEMORIES.find((memory) => memory.id === 'fictional-demo-ugadi')?.events).toHaveLength(3)
+  })
+
   it('uses the profile name in fictional demo stories without changing the shared samples', () => {
     const personalized = demoMemoriesFor('Priya')
     const anita = personalized.find((memory) => memory.id === 'fictional-demo-anita')
+    const market = personalized.find((memory) => memory.id === 'fictional-demo-market')
 
     expect(anita?.story).toContain('Anita calls Priya')
     expect(anita?.people).toContain('Priya')
+    expect(market?.story).toContain('Priya and Meera')
+    expect(market?.people).toContain('Priya')
+    expect(market?.places).toContain("Priya's home")
     expect(DEMO_MEMORIES.find((memory) => memory.id === 'fictional-demo-anita')?.story).toContain('Anita calls Margaret')
   })
 

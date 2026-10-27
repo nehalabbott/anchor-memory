@@ -42,6 +42,11 @@ describe('Profile Part 2 connections', () => {
     expect(await screen.findByRole('heading', { name: 'Memory Aquarium' })).toBeInTheDocument()
   })
 
+  it('shows a quick sign-out action on My Journey', () => {
+    mountProfile()
+    expect(screen.getByRole('button', { name: 'Sign out' })).toBeInTheDocument()
+  })
+
   it('lets the person using Anchor change and save their name', async () => {
     const user = userEvent.setup()
     mountProfile()

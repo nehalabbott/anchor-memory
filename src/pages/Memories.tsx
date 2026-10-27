@@ -143,12 +143,15 @@ export default function Memories() {
       const personResult = await savePersonDetails({ name: profileName, personalDetails: DEMO_PERSON.personalDetails })
       setPersonName(profileName)
       setPersonalDetails(DEMO_PERSON.personalDetails.join('\n'))
-      for (const memory of demoMemoriesFor(profileName)) await saveMemoryRecord(memory)
+      for (const memory of demoMemoriesFor(profileName)) {
+        await saveMemoryRecord({ ...memory, id: `${supportedPerson.id}:${memory.id}` })
+      }
       setEditing(null)
       setAdding(false)
       setNotice(`Fictional demo memories loaded${personResult.persistence === 'device' ? ' on this device; they will sync when connected' : ''}. They are sample content, not real patient information.`)
-    } catch {
-      setNotice('Demo memories could not be fully loaded. Existing memories were kept.')
+    } catch (error) {
+      const reason = error instanceof Error ? ` ${error.message}` : ''
+      setNotice(`Demo memories could not be fully loaded.${reason} Existing saved memories were kept.`)
     }
   }
 

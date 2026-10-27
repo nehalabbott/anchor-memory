@@ -92,7 +92,7 @@ export const DEMO_MEMORIES: MemoryItem[] = [
   {
     id: 'fictional-demo-market', kind: 'activity', name: 'A visit to the Basavanagudi market',
     story: 'Margaret and Meera choose jasmine flowers and ripe guavas at the market, then ride home in an auto-rickshaw with their shopping bag.',
-    people: ['Margaret', 'Meera'], places: ['Basavanagudi market', 'Bengaluru', 'home'], activities: ['shopping', 'choosing flowers', 'riding in an auto-rickshaw'], objects: ['jasmine flowers', 'guavas', 'shopping bag'],
+    people: ['Margaret', 'Meera'], places: ['Basavanagudi market', 'Bengaluru', "Margaret's home"], activities: ['shopping', 'choosing flowers', 'riding in an auto-rickshaw'], objects: ['jasmine flowers', 'guavas', 'shopping bag'],
     createdAt: 12,
   },
   {
@@ -129,6 +129,35 @@ export const DEMO_MEMORIES: MemoryItem[] = [
       { id: 'fictional-demo-birthday-3', title: 'Everyone sang and shared the cake', sequenceOrder: 3, objects: ['homemade cake'] },
     ],
     createdAt: 17,
+  },
+  {
+    id: 'fictional-demo-lakshmi', kind: 'person', name: 'Lakshmi', relationship: 'friend',
+    story: 'Lakshmi meets Margaret for an early walk, and they stop at the flower stall to admire the jasmine before heading home.',
+    people: ['Margaret', 'Lakshmi'], places: ['Malleswaram', 'Bengaluru'], activities: ['walking', 'chatting', 'buying flowers'], objects: ['jasmine garland', 'cloth shopping bag'],
+    createdAt: 18,
+  },
+  {
+    id: 'fictional-demo-cubbon', kind: 'place', name: 'A Sunday at Cubbon Park',
+    story: 'The family spread a small picnic under the trees at Cubbon Park, watched the children play, and took a relaxed walk before lunch.',
+    people: ['Margaret', 'Suresh', 'Anita', 'Rahul'], places: ['Cubbon Park', 'Bengaluru'], activities: ['picnic', 'walking', 'playing'], objects: ['picnic mat', 'lemon rice', 'water bottle'],
+    createdAt: 19,
+  },
+  {
+    id: 'fictional-demo-ugadi', kind: 'event', name: 'Ugadi at home',
+    story: 'For Ugadi, Margaret and Meera decorated the doorway with mango leaves, prepared a special meal, and welcomed family for a cheerful visit.',
+    people: ['Margaret', 'Meera', 'Anita', 'Kiran'], places: ['home', 'Bengaluru'], activities: ['decorating', 'cooking', 'welcoming family'], objects: ['mango leaves', 'flower garland', 'serving bowls'],
+    events: [
+      { id: 'fictional-demo-ugadi-1', title: 'Hung mango leaves by the doorway', sequenceOrder: 1, objects: ['mango leaves'] },
+      { id: 'fictional-demo-ugadi-2', title: 'Prepared the festive meal', sequenceOrder: 2, activity: 'cooking' },
+      { id: 'fictional-demo-ugadi-3', title: 'Welcomed the family to eat together', sequenceOrder: 3 },
+    ],
+    createdAt: 20,
+  },
+  {
+    id: 'fictional-demo-breakfast', kind: 'activity', name: 'A slow Sunday breakfast',
+    story: 'On Sunday mornings, the family gathered around the table for idli, coconut chutney, and filter coffee, with no hurry to finish the conversation.',
+    people: ['Margaret', 'Suresh', 'Anita', 'Kiran'], places: ['kitchen', 'home'], activities: ['making breakfast', 'eating together', 'talking'], objects: ['idli', 'coconut chutney', 'filter coffee'],
+    createdAt: 21,
   },
 ]
 

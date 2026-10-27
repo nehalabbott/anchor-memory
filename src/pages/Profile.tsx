@@ -1,8 +1,9 @@
 import { useEffect, useMemo, useRef, useState, type FormEvent } from 'react'
 import { Link } from 'react-router-dom'
-import PageHeader from '@/components/PageHeader'
+import { LogOut } from 'lucide-react'
 import { gardenStateFor } from '@/games/gardenState'
 import { useApp } from '@/store/useApp'
+import { logout } from '@/lib/apiClient'
 import { savePersonDetails, savePreferences } from '@/lib/appDataService'
 import { DEFAULT_PERSONAL_PREFERENCES, normalizePersonalPreferences } from '@/lib/personalization'
 
@@ -10,6 +11,8 @@ export default function Profile() {
   const { memories, lastSessionExperience, largeText, setLargeText, speechEnabled, setSpeechEnabled, supportedPerson, preferences, setPreferences, toggleAssistant } = useApp()
   const [personName, setPersonName] = useState(supportedPerson.name)
   const [personNotice, setPersonNotice] = useState('')
+  const [signingOut, setSigningOut] = useState(false)
+  const [signOutError, setSignOutError] = useState('')
   const gardenState = gardenStateFor(lastSessionExperience, memories.length)
   const safePreferences = useMemo(() => normalizePersonalPreferences(preferences ?? DEFAULT_PERSONAL_PREFERENCES), [preferences])
   const lastSavedPreferences = useRef<string | null>(null)
@@ -41,9 +44,28 @@ export default function Profile() {
     }
   }
 
+  async function signOut() {
+    setSigningOut(true)
+    setSignOutError('')
+    try {
+      await logout()
+      window.location.reload()
+    } catch (error) {
+      setSignOutError(error instanceof Error ? error.message : 'Unable to sign out. Please try again.')
+      setSigningOut(false)
+    }
+  }
+
   return (
     <>
-      <PageHeader title="My Journey" />
+      <header className="mb-5 flex items-center justify-between gap-3">
+        <h1 className="text-2xl">My Journey</h1>
+        <button type="button" onClick={() => void signOut()} disabled={signingOut} className="inline-flex min-h-[44px] shrink-0 items-center justify-center gap-2 rounded-xl border-2 border-mint-200 bg-white px-3 font-semibold text-ink disabled:opacity-60">
+          <LogOut size={18} aria-hidden />
+          {signingOut ? 'Signing out…' : 'Sign out'}
+        </button>
+      </header>
+      {signOutError && <p role="alert" className="mb-4 rounded-xl bg-rose-soft px-3 py-2 text-sm text-rose-deep">{signOutError}</p>}
 
       <section className="mt-6 card p-4" aria-labelledby="profile-person-heading">
         <h2 id="profile-person-heading" className="text-xl">Person using Anchor</h2>

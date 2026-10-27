@@ -54,8 +54,14 @@ export const DEMO_MEMORIES: MemoryItem[] = [
     createdAt: 6,
   },
   {
+    id: 'fictional-demo-kiran', kind: 'person', name: 'Kiran', relationship: 'son',
+    story: 'Kiran stops by after work, and the two of them sit on the balcony as the evening traffic hums below.',
+    people: ['Margaret', 'Kiran'], activities: ['talking', 'having tea'], places: ['Bengaluru', 'balcony'], objects: ['steel tumbler', 'tea tray'],
+    createdAt: 7,
+  },
+  {
     id: 'fictional-demo-shimla', kind: 'event', name: 'A family trip to Shimla',
-    story: 'The family took a train to Shimla, walked through the cedar hills, and took photographs while Suresh bought warm tea and bun masks for everyone.',
+    story: 'The family took a train to Shimla, walked through the cedar hills, and took photographs before sharing cups of chai and warm buns.',
     people: ['Margaret', 'Suresh', 'Anita', 'Rahul'], places: ['Shimla', 'railway station', 'cedar garden'], activities: ['train trip', 'walking', 'taking photographs', 'sharing tea'], objects: ['camera', 'picnic basket', 'tea thermos'],
     events: [
       { id: 'fictional-demo-trip-1', title: 'Packed a picnic basket', sequenceOrder: 1, objects: ['picnic basket'] },
@@ -63,37 +69,55 @@ export const DEMO_MEMORIES: MemoryItem[] = [
       { id: 'fictional-demo-trip-3', title: 'Walked through the cedar trees', sequenceOrder: 3, place: 'cedar garden', activity: 'walking' },
       { id: 'fictional-demo-trip-4', title: 'Took photographs together', sequenceOrder: 4, activity: 'taking photographs', objects: ['camera'] },
     ],
-    createdAt: 7,
+    createdAt: 8,
   },
   {
     id: 'fictional-demo-temple', kind: 'place', name: 'Malleswaram Temple mornings',
     story: 'Before the heat rose, Margaret and the family walked to the temple with flowers in a basket and stood quietly while the bells rang across the lane.',
     people: ['Margaret', 'Suresh', 'Anita', 'Rahul'], places: ['Malleswaram Temple', 'temple lane'], activities: ['praying', 'walking', 'flower offering'], objects: ['flowers', 'basket', 'bell'],
-    createdAt: 8,
+    createdAt: 9,
+  },
+  {
+    id: 'fictional-demo-lalbagh', kind: 'place', name: 'A morning walk at Lalbagh',
+    story: 'Margaret and Nisha walk beneath the old trees at Lalbagh, pausing by the lake to watch the birds before the city gets busy.',
+    people: ['Margaret', 'Nisha'], places: ['Lalbagh Botanical Garden', 'Bengaluru'], activities: ['walking', 'watching birds', 'talking'], objects: ['walking shoes', 'water bottle'],
+    createdAt: 10,
   },
   {
     id: 'fictional-demo-school', kind: 'place', name: 'School drop-offs and pickup',
     story: 'The mornings were full of school bags, lunch boxes, and chatter as Margaret waited by the gate while the children hurried to class.',
     people: ['Margaret', 'Meera', 'Rahul'], places: ['school gate', 'playground'], activities: ['drop-off', 'pickup', 'waiting'], objects: ['school bag', 'lunch box', 'water bottle'],
-    createdAt: 9,
+    createdAt: 11,
+  },
+  {
+    id: 'fictional-demo-market', kind: 'activity', name: 'A visit to the Basavanagudi market',
+    story: 'Margaret and Meera choose jasmine flowers and ripe guavas at the market, then ride home in an auto-rickshaw with their shopping bag.',
+    people: ['Margaret', 'Meera'], places: ['Basavanagudi market', 'Bengaluru', 'home'], activities: ['shopping', 'choosing flowers', 'riding in an auto-rickshaw'], objects: ['jasmine flowers', 'guavas', 'shopping bag'],
+    createdAt: 12,
+  },
+  {
+    id: 'fictional-demo-udupi', kind: 'event', name: 'A family visit to Udupi',
+    story: 'On a family visit to Udupi, they enjoyed the sea breeze, walked along the shore, and later shared a simple meal together.',
+    people: ['Margaret', 'Suresh', 'Anita', 'Kiran'], places: ['Udupi', 'Karnataka coast', 'seashore'], activities: ['travelling', 'walking', 'sharing a meal'], objects: ['camera', 'travel bag'],
+    createdAt: 13,
   },
   {
     id: 'fictional-demo-college', kind: 'event', name: 'College reunion day',
     story: 'On the college reunion afternoon, Margaret met old classmates in the courtyard and laughed over old test papers and hostel stories.',
     people: ['Margaret', 'Nisha', 'friends'], places: ['college campus', 'courtyard'], activities: ['reunion', 'sharing memories', 'laughing'], objects: ['old yearbooks', 'coffee cups'],
-    createdAt: 10,
+    createdAt: 14,
   },
   {
     id: 'fictional-demo-work', kind: 'activity', name: 'Office lunch at the office canteen',
     story: 'Margaret enjoyed the office canteen lunches with her colleagues, where they swapped stories, solved little problems, and ate warm rice and sambar together.',
     people: ['Margaret', 'colleagues'], places: ['office canteen', 'workplace'], activities: ['lunch', 'sharing stories'], objects: ['steel lunchbox', 'sambar bowl', 'rice'],
-    createdAt: 11,
+    createdAt: 15,
   },
   {
     id: 'fictional-demo-garden', kind: 'activity', name: 'Gardening together',
     story: 'Margaret enjoyed tending the garden with her family in the late afternoon while the children ran around the neem tree and picked flowers for the prayer room.',
     people: ['Margaret', 'Anita', 'Rahul', 'Meera'], places: ['courtyard', 'prayer room', 'garden'], activities: ['gardening', 'flower picking'], objects: ['watering can', 'marigolds', 'flowerpot', 'neem leaves'],
-    createdAt: 12,
+    createdAt: 16,
   },
   {
     id: 'fictional-demo-birthday', kind: 'event', name: 'A family birthday celebration',
@@ -104,7 +128,7 @@ export const DEMO_MEMORIES: MemoryItem[] = [
       { id: 'fictional-demo-birthday-2', title: 'Tea was poured and stories began', sequenceOrder: 2, objects: ['teapot'] },
       { id: 'fictional-demo-birthday-3', title: 'Everyone sang and shared the cake', sequenceOrder: 3, objects: ['homemade cake'] },
     ],
-    createdAt: 13,
+    createdAt: 17,
   },
 ]
 
@@ -115,11 +139,17 @@ export function demoMemoriesFor(personName: string): MemoryItem[] {
     ...memory,
     story: replaceName(memory.story),
     people: memory.people?.map(replaceName),
+    places: memory.places?.map(replaceName),
+    activities: memory.activities?.map(replaceName),
+    objects: memory.objects?.map(replaceName),
     events: memory.events?.map((event) => ({
       ...event,
       title: replaceName(event.title),
       story: event.story ? replaceName(event.story) : undefined,
       people: event.people?.map(replaceName),
+      place: event.place ? replaceName(event.place) : undefined,
+      activity: event.activity ? replaceName(event.activity) : undefined,
+      objects: event.objects?.map(replaceName),
     })),
   }))
 }

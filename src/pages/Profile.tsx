@@ -7,7 +7,7 @@ import { savePersonDetails, savePreferences } from '@/lib/appDataService'
 import { DEFAULT_PERSONAL_PREFERENCES, normalizePersonalPreferences } from '@/lib/personalization'
 
 export default function Profile() {
-  const { memories, lastSessionExperience, largeText, setLargeText, speechEnabled, setSpeechEnabled, supportedPerson, preferences, setPreferences } = useApp()
+  const { memories, lastSessionExperience, largeText, setLargeText, speechEnabled, setSpeechEnabled, supportedPerson, preferences, setPreferences, toggleAssistant } = useApp()
   const [personName, setPersonName] = useState(supportedPerson.name)
   const [personNotice, setPersonNotice] = useState('')
   const gardenState = gardenStateFor(lastSessionExperience, memories.length)
@@ -84,6 +84,21 @@ export default function Profile() {
             <span className="block text-sm font-semibold uppercase tracking-wide">Daily performance</span>
             <span className="mt-1 block text-base font-semibold">{gardenState.experience === 'calming' ? 'Steady and calm today.' : gardenState.experience === 'flourishing' ? 'Doing well and feeling supported today.' : 'Recent routines are still being gathered.'}</span>
           </div>
+        </div>
+      </section>
+
+      <section className="mt-6 card p-4" aria-labelledby="profile-memory-overview-heading">
+        <div className="flex items-center justify-between gap-3">
+          <div>
+            <h2 id="profile-memory-overview-heading" className="text-xl">Personal Memories</h2>
+            <p className="mt-1 text-ink/75">{memories.length ? 'Familiar details shared with Anchor.' : 'Your personal memories will appear on the memories page.'}</p>
+          </div>
+          <Link to="/garden" className="text-sm font-semibold text-garden-700 underline-offset-2 hover:underline">Recent Memory Aquarium</Link>
+        </div>
+
+        <div className="mt-4 flex flex-wrap items-center gap-3">
+          <Link to="/memories" className="inline-flex min-h-[44px] items-center justify-center rounded-xl border-2 border-garden-500 bg-garden-50 px-4 font-semibold text-garden-900">View all memories</Link>
+          <button type="button" aria-label="A Helping Hand. Open Mo assistant" onClick={() => toggleAssistant(true)} className="inline-flex min-h-[44px] items-center justify-center rounded-xl border-2 border-mint-200 bg-white px-4 font-semibold text-garden-900"><span>A Helping Hand</span></button>
         </div>
       </section>
 

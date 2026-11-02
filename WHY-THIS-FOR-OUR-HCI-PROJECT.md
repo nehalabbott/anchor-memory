@@ -17,6 +17,24 @@ Anchor responds to this interaction problem by centering the experience on the p
 - **Gentle timing and interruption:** After a period without interaction, Mo first offers a quiet check-in, then may open with a screen-aware prompt. Interaction resets these timers, and silence is treated as inactivity rather than assumed confusion.
 - **Transparent boundaries:** The optional MoCA-style self-check is presented as support-oriented and not as a medical diagnosis.
 
+## Support during activities
+
+- **Adaptive difficulty:** Anchor tracks repeated rapid taps together with gameplay difficulty, such as incorrect or slow responses. When sustained struggle is detected, it can lower the difficulty for a later question or round; one tap or mistake alone does not trigger a frustration response.
+- **Optional help:** When repeated gameplay struggle is detected, the activity can offer support such as a hint, an easier version, or a break. Choosing help can ask Mo for a game-specific clue or simpler prompt. Advanced activities offer a hint.
+  <img width="736" height="930" alt="image" src="https://github.com/user-attachments/assets/d95d3b95-3ef9-48ab-91f9-035280a23cbb" />
+
+- **Inactivity check-ins:** After 20 seconds without interaction, Mo’s toolbar gives a gentle check-in. If there is still no activity after 40 seconds, Mo opens with a prompt grounded in the current screen. Touch, pointer, keyboard, and scroll activity reset the timers. Silence is treated as inactivity, not labeled as confusion.
+<img width="1066" height="955" alt="image" src="https://github.com/user-attachments/assets/9b1680e1-c873-496d-bcf2-20a3566a1df0" />
+
+<img width="1054" height="1696" alt="mermaid-diagram" src="https://github.com/user-attachments/assets/2fa5db80-bd8c-47dc-879f-d8033f49a4a9" />
+
+## Personalization and self-check
+
+- **Personalized games:** Profile settings let you choose a visual theme and favorite colors. Saved memories, interests, and favorite items can also supply familiar objects for game prompts.
+ <img width="726" height="930" alt="image" src="https://github.com/user-attachments/assets/94cf172c-fdf2-4e34-9c4b-5c8d101fc3f1" />
+
+- **MoCA-style self-check:** Profile includes a short, optional cognitive self-check inspired by common screening tasks. It provides a score and suggested starting support level; it is not a medical diagnosis.
+
 ## Nielsen's 10 usability heuristics in Anchor
 
 These are examples of how the prototype applies Nielsen's heuristics; they are design intentions and implemented patterns, not proof of formal usability validation.

@@ -64,16 +64,6 @@ The experience is designed to remain flexible and user-controlled rather than fo
 - **Optional help:** When repeated gameplay struggle is detected, the activity can offer support such as a hint, an easier version, or a break. Choosing help can ask Mo for a game-specific clue or simpler prompt. Advanced activities offer a hint.
 - **Inactivity check-ins:** After 20 seconds without interaction, Mo’s toolbar gives a gentle check-in. If there is still no activity after 40 seconds, Mo opens with a prompt grounded in the current screen. Touch, pointer, keyboard, and scroll activity reset the timers. Silence is treated as inactivity, not labeled as confusion.
 
-flowchart TD
-    A[Sign In] --> B[Build Memory Collection]
-    B --> C[Choose Cognitive Activity]
-    C --> D[Play and Interact]
-    D --> E{Need Support?}
-    E -->|Yes| F[Mo: Hints / Simpler Prompts / Break]
-    F --> D
-    E -->|No| G[Complete Activity]
-    G --> H[Revisit Memories]
-    H --> I[Continue or Take a Break]
 ## Personalization and self-check
 
 - **Personalized games:** Profile settings let you choose a visual theme and favorite colors. Saved memories, interests, and favorite items can also supply familiar objects for game prompts.

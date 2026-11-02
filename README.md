@@ -133,5 +133,5 @@ Anchor uses a full-stack architecture combining web technologies, persistent sto
 ## GitHub collaboration and documentation
 
 - **Repository:** https://github.com/nehalabbott/anchor-memory
-- **Presentation (PPT):** 
-- **Demo video:**
+- **Presentation (PPT):** https://1drv.ms/p/c/2d2f7f450942c37b/IQBXgzvVwrZiRZMfaAHrCTVhARAkOtOnXC5VuDz0nQpIuZU?e=50Ixu9
+- **Demo video:** https://drive.google.com/file/d/1tfara1rkqcNuC_0TfSGbFvVRkABHvrHV/view?usp=sharing

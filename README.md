@@ -10,6 +10,17 @@ Anchor is a phone-friendly memory and activity web app for older adults. It comb
 4. Open Mo for conversational help, a clue, a simpler prompt, or a pause. Mo can use the current screen and saved context to tailor its reply.
 5. Visit the Memory Aquarium to revisit a saved story and optionally listen to water ambience. Profile settings control text size, voice, privacy, theme, and personalization.
 
+## Support during activities
+
+- **Adaptive difficulty:** Anchor tracks repeated rapid taps together with gameplay difficulty, such as incorrect or slow responses. When sustained struggle is detected, it can lower the difficulty for a later question or round; one tap or mistake alone does not trigger a frustration response.
+- **Optional help:** When repeated gameplay struggle is detected, the activity can offer support such as a hint, an easier version, or a break. Choosing help can ask Mo for a game-specific clue or simpler prompt. Advanced activities offer a hint.
+- **Inactivity check-ins:** After 20 seconds without interaction, Mo’s toolbar gives a gentle check-in. If there is still no activity after 40 seconds, Mo opens with a prompt grounded in the current screen. Touch, pointer, keyboard, and scroll activity reset the timers. Silence is treated as inactivity, not labeled as confusion.
+
+## Personalization and self-check
+
+- **Personalized games:** Profile settings let you choose a visual theme and favorite colors. Saved memories, interests, and favorite items can also supply familiar objects for game prompts.
+- **MoCA-style self-check:** Profile includes a short, optional cognitive self-check inspired by common screening tasks. It provides a score and suggested starting support level; it is not a medical diagnosis.
+
 ## Design and technology decisions
 
 - **React and TypeScript** provide a component-based interface and typed activity, memory, and API models.

@@ -1,3 +1,4 @@
+/* Global design tokens, theme variants, and reusable interface styles. */
 @tailwind base;
 @tailwind components;
 @tailwind utilities;

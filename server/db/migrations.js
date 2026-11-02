@@ -1,3 +1,4 @@
+// Versioned SQL schema changes applied by the database startup routine.
 export const migrations = [
   {
     version: 1,

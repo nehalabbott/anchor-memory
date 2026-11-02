@@ -1,4 +1,4 @@
-// Node 20.17+ loads the optional .env file and runs the SQLite backend.
+// Starts the Node API, connects the SQLite repositories, and loads server environment settings.
 import http from 'node:http'
 import { pathToFileURL } from 'node:url'
 import { createApiHandler } from './api.js'

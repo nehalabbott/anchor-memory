@@ -1,3 +1,4 @@
+/** Builds familiar-face, pattern, sequence, and category rounds from app data. */
 import type { MemoryItem, PersonalPreferences } from '@/lib/types'
 import {
   GENERIC_TOKENS, getPersonalizedGameTokens, slug, tokenGroup,

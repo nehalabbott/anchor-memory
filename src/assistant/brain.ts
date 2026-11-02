@@ -1,11 +1,7 @@
+/** Selects supportive rule-based replies and backend-powered responses for Mo. */
 import type { AssistantContext, ChatMessage, MemoryItem } from '@/lib/types'
 import { BackendApiError, requestAssistant } from '@/lib/apiClient'
 
-/**
- * The assistant "brain" is an interface so the UI never cares where answers come from.
- *   Part 1 (now):  RuleBasedBrain  - works offline, no API key, safe defaults.
- *   Part 3:        RemoteBrain     - POST /api/assistant (Whisper + LLM, see server/index.js)
- */
 export interface AssistantBrain {
   reply(
     input: string,
@@ -15,7 +11,6 @@ export interface AssistantBrain {
   ): Promise<string>
 }
 
-/** Phrases from the Lab 4 report that signal the user may need help (Gap 3). */
 export const STRUGGLE_PHRASES = [
   "i don't remember", 'i dont remember', "i can't remember", 'i cant remember',
   'i forgot', "i don't know", 'i dont know', 'i am confused', "i'm confused",
@@ -27,8 +22,7 @@ export function detectStruggle(text: string): string | null {
   return STRUGGLE_PHRASES.find((p) => t.includes(p)) ?? null
 }
 
-/** Orientation questions ("who am I", "what am I doing", "where am I") are grounding requests,
- *  not struggle phrases, so they're matched and answered before the struggle branch. */
+/** Grounding questions are answered before general struggle phrases. */
 const IDENTITY_PATTERNS = [/\bwho am i\b/, /\bwho'?s? this\b.*\bme\b/, /\bwhat'?s my name\b/, /\bdo you know who i am\b/]
 const ACTIVITY_PATTERNS = [/\bwhat am i doing\b/, /\bwhere am i\b/, /\bwhat is (this|going on)\b/, /\bwhat'?s happening\b/]
 
@@ -46,8 +40,7 @@ export class RuleBasedBrain implements AssistantBrain {
     const name = ctx.userName
     const details = (ctx.personalDetails ?? []).filter((d) => d.trim())
 
-    // 0. Orientation questions ("who am I", "what am I doing") answer directly and gently,
-    //    grounded only in facts the caregiver actually entered, never invented.
+    // Grounding replies use saved facts only; they never invent personal details.
     const identity = detectIdentityQuestion(t)
     if (identity === 'who') {
       return details.length
@@ -58,7 +51,7 @@ export class RuleBasedBrain implements AssistantBrain {
       return `Right now you're with me on the "${ctx.screenLabel}" screen, just spending a quiet moment together. There is nothing you need to do. Would you like to look at a memory, play something gentle, or just rest here?`
     }
 
-    // 1. Struggling: reassure first, never correct harshly (HCI: forgiving interaction)
+    // Reassure before offering a next step.
     if (detectStruggle(t)) {
       const family = memories.find((m) => m.relationship === 'son' || m.relationship === 'daughter')
       if (family && /who|remember|know/.test(t)) {
@@ -67,7 +60,7 @@ export class RuleBasedBrain implements AssistantBrain {
       return `That's perfectly okay, ${name}. There is no rush. Would you like a small clue, an easier question, or a gentle break?`
     }
 
-    // 2. Medical / diagnosis questions: stay within scope
+    // Keep medical questions within the assistant's scope.
     if (/diagnos|medicine|medication|dose|doctor|dementia|alzheimer|score mean/.test(t)) {
       return `That is a good question for your doctor or carer. ${SAFETY_NOTE} I can help you practise gently, or we can look at your photos together.`
     }
@@ -95,7 +88,7 @@ export class RuleBasedBrain implements AssistantBrain {
       return `Of course, ${name}. There is no rush. Let's pause together; the Memory Aquarium will be here when you are ready.`
     }
 
-    // 3. Navigation / feature help
+    // Handle common feature and navigation requests.
     if (/game|play|practice|exercise/.test(t)) return `Let's play something gentle. Tap "Games" at the bottom, and pick whichever feels right today.`
     if (/photo|memor|family|picture/.test(t)) return `Your memories are kept safe in "Your Memories". We will use them in games so they feel personal to you.`
     if (/garden|flower/.test(t)) return `Memory Aquarium responds to how a moment felt. There is no right or wrong way to spend time there.`
@@ -106,7 +99,7 @@ export class RuleBasedBrain implements AssistantBrain {
       return `I can help you find activities, talk about your memories, give a hint, or keep you company while you rest.`
     }
 
-    // 4. Context-aware default
+    // Otherwise, offer a screen-aware supportive reply.
     return `Thank you for telling me, ${name}. You are on the "${ctx.screenLabel}" screen. Would you like a hint, an easier activity, or a short rest?`
   }
 }

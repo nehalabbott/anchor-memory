@@ -1,3 +1,4 @@
+/** Connects voice-awareness signals and gameplay events to supportive prompts. */
 import { useEffect, useRef } from 'react'
 import { useApp } from '@/store/useApp'
 import type { InteractionEvent, Part2InteractionEvent } from '@/lib/types'

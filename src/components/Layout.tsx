@@ -1,3 +1,4 @@
+/** Shared shell for page content, voice controls, Mo, and navigation. */
 import { useEffect } from 'react'
 import { Outlet } from 'react-router-dom'
 import BottomNav from './BottomNav'
@@ -9,10 +10,6 @@ import { useInactivityNudge } from '@/assistant/useInactivityNudge'
 import { initializeAppData } from '@/lib/appBootstrap'
 import { ScreenContextSync, useScreenContextTicker } from '@/store/useScreenContext'
 
-/**
- * App shell: scrollable content  ->  persistent Assistant toolbar  ->  bottom nav.
- * Centered phone-width column on desktop so the Lab 5 wireframes are reproduced faithfully.
- */
 const COLOR_MAP = {
   Blue: '#4F9AE8',
   Green: '#1E9A7A',

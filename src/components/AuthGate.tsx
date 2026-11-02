@@ -1,3 +1,4 @@
+/** Handles sign-in, registration, and device-only entry when the backend is offline. */
 import { useEffect, useState, type ReactNode } from 'react'
 import { HeartHandshake, LockKeyhole } from 'lucide-react'
 import { BackendApiError, getSession, login, logout, register } from '@/lib/apiClient'

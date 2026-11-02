@@ -1,144 +1,103 @@
 # Anchor
-**Personalised memory games and a gentle AI assistant for older adults with early-stage dementia.**
 
-Anchor is a senior-friendly application designed to support memory recall, confidence, and calm engagement through personalised activities. Caregivers can add memories, names, routines, and stories, which are used to create familiar memory games. A voice-enabled assistant named **Mo** provides prompts, simpler hints, and supportive breaks when users need help.
+Anchor is a phone-friendly memory and activity web app for older adults. It combines caregiver-added familiar memories, gentle games, the Mo assistant, and a reflective Memory Aquarium. It is a supportive tool, not a medical diagnostic product.
 
-The application uses a high-contrast, low-pressure interface with large touch targets and simple language. It is intended as a supportive memory tool, not a diagnostic or medical assessment tool.
+## App flow
 
-## Problem Statement
+1. Open Anchor in a browser and sign in or create an account. If the backend is unavailable, the sign-in screen can offer access to data already saved on that device.
+2. Add or update the person’s details and memories. Entries can include names, relationships, stories, places, activities, events, photos, and voice recordings.
+3. Choose an activity. Personal memories and preferences can supply familiar prompts and objects; the activities provide hints, retries, and support to take a break.
+4. Open Mo for conversational help, a clue, a simpler prompt, or a pause. Mo can use the current screen and saved context to tailor its reply.
+5. Visit the Memory Aquarium to revisit a saved story and optionally listen to water ambience. Profile settings control text size, voice, privacy, theme, and personalization.
 
-Older adults with early-stage dementia may experience difficulties recalling familiar people, events, and routines. Generic cognitive games may lack personal relevance, while complex interfaces and score-based feedback can create frustration. Anchor aims to make memory activities more familiar, accessible, and emotionally supportive through personalisation and gentle assistance.
+## Design and technology decisions
 
-## Objectives
+- **React and TypeScript** provide a component-based interface and typed activity, memory, and API models.
+- **Vite** serves the browser app, builds production assets, and proxies `/api` requests during local development.
+- **Node.js** hosts the API and Mo endpoint. The Groq key stays on the server in `.env`; it is never built into browser assets.
+- **SQLite** stores accounts and application data in the local backend. Database migrations and repository modules keep persistence separate from request handling.
+- **Zustand and browser storage** keep app preferences and cached records available between browser visits. IndexedDB stores photo/audio blobs separately from small metadata records.
+- **Large touch targets, readable text, simple instructions, multiple themes, and low-pressure feedback** prioritize phone use and accessibility.
+- **Mo and browser speech features are optional.** Voice input depends on browser speech recognition support and microphone permission. Mo requires the backend and a configured Groq API key.
+- **The phone preview is a browser session over the local network.** Keep the computer, backend, and Vite server running, and connect the phone to the same Wi-Fi.
 
-- Provide personalised memory games using caregiver-provided memories and meaningful details.
-- Support memory recall through familiar people, routines, stories, and visual cues.
-- Offer voice-enabled assistance with hints, simpler instructions, and breaks.
-- Create a calm, accessible experience without score-based pressure.
-- Explore adaptive responses to signs of frustration during activities.
-- Encourage engagement through a reflective Memory Aquarium.
+## Setup
 
-## Current Features
+### Requirements
 
-### 1. Memories and Personalisation
+- Node.js 20.17 or later and npm.
+- A Groq API key if you want Mo’s server-backed responses.
+- Phone preview: phone and development computer connected to the same Wi-Fi network.
 
-- Caregiver-managed memory profiles containing names, relationships, stories, and important details.
-- Personalised prompts and clues based on saved memories.
-- Retry options and easier hints to support users who need additional help.
+### Install and configure
 
-### 2. Memory Games
-
-The application includes seven activities:
-
-- Familiar Faces
-- Pattern & Shape Match
-- Sequence Memory
-- Odd One Out
-- Dual N-Back
-- Trail Making
-- Category Association
-
-Games include feedback, retry options, and navigation designed to help users leave an activity without feeling stuck.
-
-### 3. Memory Aquarium
-
-Memory Aquarium is a calm reflection space that responds to recent activity and mood. It is designed to encourage reflection without displaying numeric scores or judgmental feedback. Optional generated water ambience starts only when enabled by the user, and includes a volume control.
-
-### 4. Voice-Enabled Assistant — Mo
-
-- Voice input and spoken responses using the browser Web Speech API.
-- Quick actions for hints, easier versions, and breaks.
-- Context-aware guidance using the current screen, recent conversation, and memory summaries.
-- Supportive responses that avoid diagnosis and encourage contacting trusted caregivers or clinicians when appropriate.
-
-### 5. Use on a phone
-
-Anchor runs in a phone browser over the same Wi-Fi network as the computer running the app. No phone app installation or Android build tools are needed. Keep the frontend and backend terminals running while using Anchor.
-
-## Technologies Used
-
-- **Frontend:** React, TypeScript
-- **Development tools:** Node.js, npm
-- **AI assistant:** Groq API through a local proxy server
-- **Voice interaction:** Browser Web Speech API
-- **Backend:** Local Node.js server
-- **Database:** SQLite
-- **Testing:** npm test, TypeScript type checking
-- **Version control:** Git and GitHub
-
-## Application Structure
-
-- `src/` — React and TypeScript frontend
-- `server/` — Local server logic
-- `server/db/` — Database logic and migrations
-- `server/repositories/` — Data repositories
-- `public/` — Static assets
-- `data/` — Local development data
-
-## Setup and Installation
-
-**Prerequisites:** Node.js 20.17 or later and npm.
-
-1. Clone the repository and switch to the development branch:
-
-   ```bash
-   git clone https://github.com/nehalabbott/anchor-memory.git
-   cd anchor-memory
-   git checkout update-codebase
-   ```
-
-2. Install dependencies and configure the environment:
-
-   ```bash
-   npm install
-   cp .env.example .env
-   ```
-
-3. Add your `GROQ_API_KEY` to `.env`.
-
-4. Start the application in separate terminals:
-
-   ```bash
-   npm run server
-   ```
-
-   ```bash
-   npm run dev
-   ```
-
-5. Open [http://localhost:5173](http://localhost:5173) in your browser.
-
-The frontend communicates with the local proxy server for AI assistant functionality.
-
-### Use Anchor in a phone browser (Windows PowerShell)
-
-From the project directory, start the backend and Vite preview in two separate PowerShell terminals:
+In PowerShell, clone the submission branch and install packages:
 
 ```powershell
-# Terminal 1: backend API and Mo
+git clone --branch final-submission --single-branch https://github.com/nehalabbott/anchor-memory.git
+Set-Location anchor-memory
+npm ci
+Copy-Item .env.example .env
+```
+
+Open `.env` and set `GROQ_API_KEY` to your own key. Keep it in this server-side file; do not put it in frontend variables or source code. The backend creates its SQLite database under `data/` when it starts.
+
+### Run on the computer
+
+Open two PowerShell terminals in the project directory. Keep both running:
+
+```powershell
+# Terminal 1: API, database, and Mo
 npm run server
 ```
 
 ```powershell
-# Terminal 2: frontend, reachable by devices on the local network
+# Terminal 2: browser app
+npm run dev
+```
+
+Open `http://localhost:5173` on the computer.
+
+### Run on a phone browser
+
+Use the same backend command in Terminal 1. Start Vite with a network-accessible host in Terminal 2:
+
+```powershell
 npm run dev -- --host 0.0.0.0
 ```
 
-Open the **Network** URL printed by Vite on the phone, for example `http://192.168.1.25:5173`. The phone and computer must be on the same Wi-Fi network. If Mo does not respond after changing `.env`, stop and restart the backend terminal so it reloads `GROQ_API_KEY`. Keep both terminals running while using Anchor.
+Open the **Network** URL printed by Vite on the phone (for example, `http://192.168.1.25:5173`). Both devices must be on the same Wi-Fi, and the computer firewall must allow the development server. The address can change when the computer reconnects; use the current Network URL. Restart `npm run server` after changing `.env`.
 
-On-device storage is available in the phone browser. Sign-in, server sync, and Mo require the backend; voice features depend on browser speech support and microphone permission. Keep `GROQ_API_KEY` only in the Node server's `.env`, never in frontend code.
+## Useful commands
 
-## Useful Commands
-
-```bash
-npm test
+```powershell
 npm run typecheck
+npm test
 npm run build
 npm run preview
 npm run server
 ```
 
-## Team Members
+`npm run preview` serves the production build on the computer; use the Vite development server with `--host 0.0.0.0` for phone testing on the local network.
 
--Nehal Abbott
--Sonu 
+## Project map
+
+- `src/main.tsx` and `src/App.tsx` — browser entry point, authentication gate, and routes.
+- `src/pages/` and `src/components/` — user-facing screens and shared interface.
+- `src/games/` and `src/garden/` — activities, game content, aquarium simulation, and ambience.
+- `src/assistant/` — Mo responses, voice support, and supportive prompts.
+- `src/lib/` and `src/store/` — API client, data persistence/sync, domain types, and app state.
+- `server/index.js` and `server/api.js` — Node server startup and HTTP endpoints.
+- `server/db/` and `server/repositories/` — SQLite schema migrations and data access.
+- `public/` — static images and browser assets.
+- `.env.example` — server environment-variable template.
+
+## GitHub collaboration and documentation
+
+- **Lead:** Member A
+- **Repository:** https://github.com/nehalabbott/anchor-memory
+- **Working branch:** `final-submission`
+- **Presentation (PPT):**
+- **Demo video:**
+
+README documentation covers the project overview, architecture and design decisions, setup, execution, phone-browser preview, and useful validation commands.

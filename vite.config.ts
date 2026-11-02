@@ -1,3 +1,4 @@
+// Configures the browser development server, source aliases, and backend proxy.
 import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
 import path from 'path'

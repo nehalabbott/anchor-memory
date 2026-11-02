@@ -1,3 +1,4 @@
+/** Contains instructions and answer material for each check-in task. */
 import type { AssessmentDomain } from './engine'
 
 export interface AssessmentPrompt {

@@ -1,3 +1,4 @@
+/** Generates user-enabled water ambience with volume and cleanup controls. */
 import { useCallback, useEffect, useRef, useState } from 'react'
 
 export type GardenAudioMood = 'calm' | 'supportive' | 'agitated'

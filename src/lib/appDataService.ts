@@ -1,3 +1,4 @@
+/** Saves app data to the backend with a device-storage fallback for network outages. */
 import { BackendApiError, createMemory, deleteMemory, updateMemory, updatePerson, updatePreferences } from './apiClient'
 import { importLegacyLocalDataToBackend } from './localDataSync'
 import type { MemoryItem, MemoryKind, PersonalPreferences, SupportedPerson } from './types'

@@ -1,3 +1,4 @@
+/** Supplies generic and personalized objects for memory-based games. */
 import type { MemoryItem, PersonalPreferences } from '@/lib/types'
 
 export type GameGlyph = 'circle' | 'square' | 'triangle' | 'flower' | 'leaf' | 'apple' | 'sun' | 'cup' | 'camera' | 'basket' | 'bird' | 'chair'

@@ -1,14 +1,7 @@
+/** Persistent entry point for opening Mo from any screen. */
 import { Mic } from 'lucide-react'
 import { useApp } from '@/store/useApp'
 
-/**
- * The persistent "Talk to Assistant" toolbar (Lab 5: purple pill above the bottom nav).
- * Visible on every screen. Always paired with text + icon (never icon alone).
- *
- * When the person has gone quiet for a while (useInactivityNudge), this pulses gently and
- * swaps its label to a soft check-in, without opening anything — a passer-by notices Mo is
- * there without anything popping up over what they were looking at.
- */
 export default function AssistantBar() {
   const toggle = useApp((s) => s.toggleAssistant)
   const nudging = useApp((s) => s.assistantNudging)
@@ -26,9 +19,7 @@ export default function AssistantBar() {
         <Mic size={24} className="relative" aria-hidden />
         <span className="relative">{nudging ? "Still there? Tap to talk" : 'Talk to Assistant'}</span>
       </button>
-      {/* Announced to screen readers without needing the panel open. Only rendered when there's
-          something to say, and role="alert" rather than "status" so it never collides with the
-          per-activity feedback region that already uses role="status" on game screens. */}
+      {/* Use alert so screen readers announce the check-in while Mo is closed. */}
       {nudging && <p role="alert" className="sr-only">Mo is checking in on you.</p>}
     </div>
   )

@@ -1,3 +1,4 @@
+// Creates the repository bundle shared by API handlers.
 import { createPersonRepository } from './personRepository.js'
 import { createPreferencesRepository } from './preferencesRepository.js'
 import { createMemoryRepository } from './memoryRepository.js'

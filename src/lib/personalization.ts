@@ -1,3 +1,4 @@
+/** Normalizes saved preferences and exposes safe personalization context. */
 import { useApp } from '@/store/useApp'
 import type { PersonalPreferences } from './types'
 

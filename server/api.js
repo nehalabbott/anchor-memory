@@ -1,3 +1,4 @@
+// Defines validated HTTP routes for accounts, memories, activity data, and Mo.
 import { SUPPORTED_PERSON_ID } from './repositories/personRepository.js'
 import {
   ApiError, assertAllowedKeys, boundedJsonObject, optionalInteger, optionalString, requireObject,

@@ -1,3 +1,4 @@
+/** Renders animated aquarium fish using recent interaction mood and reduced-motion settings. */
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { useApp } from '@/store/useApp'
 import { pondMoodFromEvents, pondEnergyFromMood, type PondEnergy } from '@/games/pondMood'
@@ -18,13 +19,6 @@ const ENERGY_COPY: Record<PondEnergy, string> = {
   joyful: 'The fish are gliding calmly, unhurried.',
 }
 
-/**
- * A living koi pond whose motion reflects how the last few answers went, the way real fish
- * dart when startled and glide when undisturbed. Driven by a small physics simulation
- * (src/games/pondSim.ts) so the motion has real inertia and curved paths rather than emoji
- * snapping between CSS keyframes. Purely decorative feedback: never shown as a score, and it
- * settles back to a calm glide on its own once a few right answers come in.
- */
 export default function PondScene({ className = '', label }: { className?: string; label?: string }) {
   const events = useApp((s) => s.events)
   const mood = useMemo(() => pondMoodFromEvents(events), [events])

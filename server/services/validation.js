@@ -1,3 +1,4 @@
+// Shared request parsing and validation helpers for the HTTP API.
 export class ApiError extends Error {
   constructor(status, message, code = 'invalid_request') {
     super(message)

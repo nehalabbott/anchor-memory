@@ -1,3 +1,4 @@
+/** Runs selected activities and records responses, progress, and support events. */
 import { useEffect, useRef, useState, type PointerEvent } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
 import { Apple, Armchair, Bird, Camera, Circle, Flower2, Leaf, Pause, Play, RotateCcw, ShoppingBasket, Square, Sun, Triangle, Coffee, UserRound } from 'lucide-react'

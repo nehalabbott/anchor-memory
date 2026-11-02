@@ -1,3 +1,4 @@
+/** Defines cognitive check-in sessions, domain scores, and result recommendations. */
 export const ASSESSMENT_MAX_SCORE = 30
 export const ASSESSMENT_DOMAINS = [
   'visuospatial',

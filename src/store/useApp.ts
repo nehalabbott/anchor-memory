@@ -1,3 +1,4 @@
+/** Global app state with persisted preferences, memories, and local sync metadata. */
 import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
 import { stopAllSpeechListeners } from '@/assistant/speech'
@@ -25,10 +26,10 @@ interface AppState {
   assistantOpen: boolean
   assistantAction: AssistantAction | null
   assistantPrompt: string | null
-  /** True while Mo is gently signalling "still there?" on the closed toolbar, before any auto-open. */
+  /** Whether the closed Mo toolbar is showing an inactivity check-in. */
   assistantNudging: boolean
-  events: InteractionEvent[]          // Part 3 reads this
-  interactionState: InteractionState  // Part 3 writes this
+  events: InteractionEvent[]
+  interactionState: InteractionState
   gameplaySupportActivity: ActivityId | null
   speechEnabled: boolean              // read replies aloud
   largeText: boolean
@@ -57,8 +58,7 @@ interface AppState {
   requestAssistantAction: (action: AssistantAction, prompt?: string) => void
   clearAssistantAction: () => void
   setAssistantNudging: (v: boolean) => void
-  /** Mo opens on its own and speaks first (an unprompted check-in or hint), rather than
-   *  echoing the message back as something the person said. */
+  /** Proactive text for Mo to present as its own message. */
   assistantSpeakFirst: string | null
   openAssistantWithMessage: (text: string) => void
   clearAssistantSpeakFirst: () => void

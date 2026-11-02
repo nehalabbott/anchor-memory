@@ -1,3 +1,4 @@
+/** Stores and resolves photo or audio blobs in browser IndexedDB. */
 import type { MediaKind, MediaReference, MediaRepository } from '@/lib/types'
 
 const DATABASE_NAME = 'anchor-media-v1'

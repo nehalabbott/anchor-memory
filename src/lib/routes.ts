@@ -1,7 +1,4 @@
-/**
- * Shared navigation for the main app. The profile option stays visible so users can reach
- * their personal details and progress without needing to hunt through the home screen.
- */
+/** Defines main navigation links and labels used by pages and Mo. */
 export const NAV = [
   { path: '/memories', label: 'Memories', icon: 'home' },
   { path: '/games', label: 'Games', icon: 'brain' },

@@ -1,3 +1,4 @@
+/** Maps app activity context to a non-clinical aquarium presentation mood. */
 import { useApp } from '@/store/useApp'
 import { useScreenContext } from '@/store/useScreenContext'
 

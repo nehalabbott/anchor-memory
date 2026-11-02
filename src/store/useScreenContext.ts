@@ -1,3 +1,4 @@
+/** Tracks the active route and activity context used by Mo and adaptive support. */
 import { useEffect } from 'react'
 import { useLocation } from 'react-router-dom'
 import { create } from 'zustand'

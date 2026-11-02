@@ -1,3 +1,4 @@
+/** Provides Mo's chat, voice controls, and contextual quick actions. */
 import { useEffect, useRef, useState } from 'react'
 import { useLocation } from 'react-router-dom'
 import { Send, X, Volume2, VolumeX, Lightbulb, Star, Leaf, HeartHandshake, ShieldAlert } from 'lucide-react'
@@ -10,7 +11,6 @@ import { getSafeAssistantPersonalization } from '@/lib/personalization'
 
 const SUGGESTIONS = ['What can you do?', 'I want to play a game', 'Tell me about my photos', 'I need a rest']
 
-/** Slide-up assistant sheet: chat + voice + quick actions from the Lab 5 "How can I help?" screen. */
 export default function AssistantPanel() {
   const { assistantOpen, toggleAssistant, chat, addChat, userName, memories, interactionState, supportedPerson,
       speechEnabled, setSpeechEnabled, logEvent, assistantAction, assistantPrompt, clearAssistantAction,
@@ -22,7 +22,6 @@ export default function AssistantPanel() {
   const endRef = useRef<HTMLDivElement>(null)
   const inputRef = useRef<HTMLInputElement>(null)
 
-  // Greeting on first open
   useEffect(() => {
     if (assistantOpen && chat.length === 0) {
       addChat({ role: 'assistant', text: `Hi ${userName}, I'm Mo. I can help you reflect, give a gentle hint, or just keep you company.` })
@@ -45,8 +44,7 @@ export default function AssistantPanel() {
     quick(action, prompt ?? undefined)
   }, [assistantOpen, assistantAction, assistantPrompt])
 
-  // Mo speaks first: an unprompted check-in or hint after a stretch of silence elsewhere in the app.
-  // Rendered as Mo's own message, never as something the person said.
+  // Keep proactive check-ins as Mo messages rather than user messages.
   useEffect(() => {
     if (!assistantOpen || !assistantSpeakFirst) return
     const message = assistantSpeakFirst
@@ -65,7 +63,6 @@ export default function AssistantPanel() {
 
   useEffect(() => { endRef.current?.scrollIntoView({ behavior: 'smooth' }) }, [chat, thinking])
 
-  // Escape closes the sheet
   useEffect(() => {
     if (!assistantOpen) return
     const h = (e: KeyboardEvent) => e.key === 'Escape' && toggleAssistant(false)
@@ -79,7 +76,6 @@ export default function AssistantPanel() {
     setText(''); setNotice('')
     addChat({ role: 'user', text: input })
 
-    // Feed Part 3: log struggle cues from speech/text
     const cue = detectStruggle(input)
     if (cue) logEvent({ type: 'speech_cue', at: Date.now(), phrase: cue })
 
@@ -133,14 +129,12 @@ export default function AssistantPanel() {
             className="w-12 h-12 rounded-full bg-white border border-mint-200 flex items-center justify-center"><X size={24} /></button>
         </header>
 
-        {/* Quick actions (from Lab 5 "How can I help?") */}
         <div className="px-4 grid grid-cols-3 gap-2">
           <QuickBtn icon={<Lightbulb size={22} />} label="Give me a clue" cls="bg-mint-100 border-garden-500 text-garden-900" onClick={() => quick('clue')} />
           <QuickBtn icon={<Star size={22} />} label="Easier question" cls="bg-rose-soft border-rose-main text-rose-deep" onClick={() => quick('easier')} />
           <QuickBtn icon={<Leaf size={22} />} label="Gentle break" cls="bg-garden-100 border-garden-500 text-garden-700" onClick={() => quick('break')} />
         </div>
 
-        {/* Conversation */}
         <div className="flex-1 overflow-y-auto px-4 py-4 space-y-3" aria-live="polite">
           {visibleChat.map((m) => (
             <div key={m.id} className={m.role === 'user' ? 'flex justify-end' : 'flex justify-start'}>
@@ -166,13 +160,11 @@ export default function AssistantPanel() {
           <div ref={endRef} />
         </div>
 
-        {/* Safety notice (from Lab 5) */}
         <p className="mx-4 mb-2 flex items-start gap-2 rounded-xl bg-rose-soft/60 px-3 py-2 text-sm text-rose-deep">
           <ShieldAlert size={18} className="mt-0.5 shrink-0" aria-hidden /> Mo offers wellbeing guidance, not medical advice or diagnosis.
         </p>
         {notice && <p role="alert" className="mx-4 mb-2 rounded-xl bg-sun-soft px-3 py-2 text-sun-deep">{notice}</p>}
 
-        {/* Input */}
         <form className="px-4 pb-5 pt-1 flex items-center gap-2" onSubmit={(e) => { e.preventDefault(); send(text) }}>
           <label htmlFor="mo-input" className="sr-only">Message to Mo</label>
           <input id="mo-input" ref={inputRef} value={text} onChange={(e) => setText(e.target.value)}

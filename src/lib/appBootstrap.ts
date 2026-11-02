@@ -1,3 +1,4 @@
+/** Loads server data on startup and synchronizes pending device-only changes. */
 import { BackendApiError, createMemory, getPerson, getPreferences, listAssessments, listMemories, updateMemory, updatePerson } from './apiClient'
 import { importLegacyLocalDataToBackend } from './localDataSync'
 import { hadPersistedAppStateOnStartup, useApp } from '@/store/useApp'

@@ -1,3 +1,4 @@
+/** Implements Dual N-Back, Trail Making, and Category Association activities. */
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { Brain, ChevronLeft, Route, Sparkles, Tags } from 'lucide-react'

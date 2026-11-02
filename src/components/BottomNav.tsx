@@ -1,10 +1,10 @@
+/** Main navigation for memories, games, aquarium, and profile. */
 import { NavLink } from 'react-router-dom'
 import { Home, Brain, Fish, User } from 'lucide-react'
 import { NAV } from '@/lib/routes'
 
 const ICONS = { home: Home, brain: Brain, fish: Fish, user: User }
 
-/** Text + icon on every item (redundant cues); active tab is a filled mint pill as in Lab 5. */
 export default function BottomNav() {
   return (
     <nav aria-label="Main" className="bg-white border-t border-mint-200 px-2 pt-1 sm:pt-2 pb-[max(10px,env(safe-area-inset-bottom))]">

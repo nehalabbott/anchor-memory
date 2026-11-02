@@ -1,3 +1,4 @@
+/** Shared instructions, answer feedback, and accessible choice styling for games. */
 import { useEffect, useRef, useState, type ReactNode } from 'react'
 import { AlertCircle, CheckCircle2, Volume2 } from 'lucide-react'
 import { useApp } from '@/store/useApp'
@@ -13,11 +14,7 @@ const COLOR_MAP = {
   White: '#F8F8F8',
 } as const
 
-/**
- * Shown before a game starts. Gives a short, plain-language "how to play" demo with an
- * optional read-aloud, so a person does not have to start playing cold to understand what
- * to do. `onStart` is only called once the person chooses to begin.
- */
+/** Explains a game with a short example and optional read-aloud before starting. */
 export function HowToPlayCard({
   title,
   description,
@@ -94,11 +91,7 @@ export function HowToPlayCard({
 
 export type FeedbackStatus = 'correct' | 'incorrect' | null
 
-/**
- * A high-contrast popup for the result of an answer. Wrong answers get a clearly different
- * color from correct ones and, critically, a "Try again" action so the person can retry the
- * same prompt right after seeing the hint, instead of being forced straight to a new one.
- */
+/** Shows answer feedback, an optional hint, and retry/continue actions. */
 export function FeedbackPopup({
   status,
   message,

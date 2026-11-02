@@ -6,14 +6,7 @@ import { NUDGE_DELAY_MS, HINT_DELAY_MS, silenceHint } from './brain'
 
 const ACTIVITY_EVENTS: (keyof WindowEventMap)[] = ['pointerdown', 'keydown', 'touchstart', 'wheel']
 
-/**
- * Watches for real user activity anywhere in the app (not just inside the assistant panel).
- * After a stretch of silence it first pulses the closed "Talk to Assistant" toolbar as a gentle
- * "still there?" cue, so the person notices Mo without anything popping open. If they still don't
- * respond, Mo escalates once by opening with a concrete hint drawn from their own memories.
- * Any tap, key press or route change resets the clock; it never nudges twice in a row without
- * a fresh sign of activity, and it stands down completely while the person is mid-conversation.
- */
+/** Uses a two-stage, activity-resetting timer for a gentle Mo check-in and optional hint. */
 export function useInactivityNudge() {
   const loc = useLocation()
   const nudgeTimer = useRef<ReturnType<typeof setTimeout>>()

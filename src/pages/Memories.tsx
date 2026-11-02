@@ -1,3 +1,4 @@
+/** Lets caregivers create, edit, and revisit personal memory records and media. */
 import { useState, type FormEvent } from 'react'
 import { Link } from 'react-router-dom'
 import { Camera, Mic, Pencil, Plus, Trash2 } from 'lucide-react'

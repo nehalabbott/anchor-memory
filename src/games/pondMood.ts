@@ -1,13 +1,6 @@
+/** Derives a short-lived aquarium animation mood from recent answer events. */
 import type { InteractionEvent } from '@/lib/types'
 
-/**
- * A live, moment-to-moment read on how the last few answers went, used only to drive the
- * koi pond's motion (see PondScene.tsx). This is a UX animation signal, not a clinical
- * measure: it looks at the last few answers, not the whole history, so a rough patch a
- * while ago doesn't linger, and it never appears as a score or number anywhere in the UI.
- *
- * mood: -1 (recent wrong answers) .. 0 (neutral/no data yet) .. +1 (recent right answers)
- */
 export type PondMood = number
 
 const WINDOW = 6          // how many recent answers count

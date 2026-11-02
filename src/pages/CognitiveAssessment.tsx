@@ -1,3 +1,4 @@
+/** Presents the consent-based cognitive check-in and saves its supportive result. */
 import { useEffect, useMemo, useRef, useState, type PointerEvent } from 'react'
 import { ArrowLeft, RotateCcw, Sparkles } from 'lucide-react'
 import { createAssessment, listAssessments } from '@/lib/apiClient'

@@ -1,3 +1,4 @@
+// Handles password hashing, verification, and public user projections.
 import { randomBytes, scryptSync, timingSafeEqual } from 'node:crypto'
 
 const PASSWORD_SALT_BYTES = 16

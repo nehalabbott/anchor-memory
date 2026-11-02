@@ -1,3 +1,4 @@
+/** Imports and synchronizes cached browser data with the Anchor backend. */
 import type { MemoryItem, PersonalPreferences, SupportedPerson } from './types'
 import { getPerson, listMemories, createMemory, updateMemory, updatePerson, updatePreferences } from './apiClient'
 import { useApp } from '@/store/useApp'

@@ -1,3 +1,4 @@
+/** Batches activity sessions and interaction events for backend persistence. */
 import { appendEvents, createSession, endSession } from './apiClient'
 import type { ActivityId, InteractionEvent, Part2InteractionEvent } from './types'
 import { useApp } from '@/store/useApp'

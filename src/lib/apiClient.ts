@@ -1,3 +1,4 @@
+/** Typed browser client for Anchor's authentication, memory, activity, and assistant APIs. */
 import type {
   ApplicationSession, AssistantContext, CognitiveAssessment, InteractionEvent, MemoryItem, PersonalPreferences, SupportedPerson,
 } from './types'

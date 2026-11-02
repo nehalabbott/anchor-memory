@@ -1,3 +1,4 @@
+/** Provides personal details, accessibility, privacy, and personalization settings. */
 import { useEffect, useMemo, useRef, useState, type FormEvent } from 'react'
 import { Link } from 'react-router-dom'
 import { LogOut } from 'lucide-react'

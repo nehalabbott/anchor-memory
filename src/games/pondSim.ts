@@ -1,18 +1,5 @@
+/** Pure fish-motion simulation used by the Memory Aquarium. */
 import type { PondMood } from './pondMood'
-
-/**
- * A small, self-contained fish simulation — no DOM, no React, so it's easy to test and to
- * reason about. Each fish wanders toward a slowly-changing target point using a simple
- * steering behaviour (turn a little toward the target each tick, don't teleport), which
- * gives it a continuous, organic-looking path rather than snapping between waypoints.
- *
- * Mood changes the fish's PACE and JITTER, not its path logic:
- *   - Positive mood (recent right answers): fish glide, smooth and unhurried.
- *   - Negative mood (recent wrong answers): fish dart faster and turn more erratically,
- *     the way startled fish do — this is the "swim faster when wrong" behaviour requested.
- * Speed changes ease in over ~1.5s rather than snapping, so a single answer nudges the
- * pond's mood rather than visibly flicking a switch.
- */
 
 export interface FishState {
   id: string

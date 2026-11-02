@@ -1,4 +1,4 @@
-/** Shared domain types for the app, personalized activities, and the future adaptive loop. */
+/** Shared types for memory, activity, personalization, and backend data. */
 
 export type Relationship = 'son' | 'daughter' | 'spouse' | 'grandchild' | 'grandparent' | 'friend' | 'other'
 export type MemoryKind = 'person' | 'story' | 'place' | 'activity' | 'object' | 'event' | 'sequence'
@@ -116,13 +116,13 @@ export interface ChatMessage {
   at: number
 }
 
-/** The five estimated states from the Lab 4 report (Section 4.2). Behavioural estimate, NOT a diagnosis. */
+/** Non-clinical interaction states used to adapt support. */
 export type InteractionState = 'normal' | 'needs_help' | 'confusion' | 'possible_frustration' | 'high_frustration'
 
-/** Activity identifiers are stable across UI changes and suitable for Part 3 event records. */
+/** Stable identifiers for supported activities. */
 export type ActivityId = 'faces' | 'pattern' | 'sequence' | 'category' | 'dual-n-back' | 'trail-making' | 'category-association'
 
-/** Non-judgmental activity lifecycle and interaction signals for Part 2 and Part 3. */
+/** Scoped events associated with an activity session. */
 export type Part2InteractionEvent =
   | { type: 'rapid_taps'; at: number; sessionId: string; activityId: ActivityId; count: number }
   | { type: 'activity_started'; at: number; sessionId: string; activityId: ActivityId }
@@ -145,7 +145,7 @@ export interface GardenState {
   updatedAt: number
 }
 
-/** Signals logged during play; existing Part 1 variants remain stable. */
+/** Interaction signals used by support logic and activity history. */
 export type InteractionEvent =
   | { type: 'wrong_answer'; at: number }
   | { type: 'help_request'; at: number }
@@ -168,8 +168,7 @@ export interface AssistantContext {
   lastFailedAction?: string | null
   elapsedTimeMs?: number
   activityState?: 'idle' | 'active' | 'paused' | 'completed'
-  /** A few grounding facts about the supported person, e.g. "You live in Bangalore with your daughter Priya."
-   *  Used to answer identity/orientation questions ("who am I", "where am I") without guessing. */
+  /** Caregiver-entered facts for grounding replies; Mo must not invent them. */
   personalDetails?: string[]
   /** Minimal, opt-in personalization. Never includes private memories or arbitrary content. */
   personalization?: Pick<PersonalPreferences, 'favoriteFlower' | 'favoriteBird' | 'favoriteSong' | 'lifeActivityTags'>

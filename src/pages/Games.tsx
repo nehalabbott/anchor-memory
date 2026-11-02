@@ -1,3 +1,4 @@
+/** Lists the memory and cognitive activities available to play. */
 import { Link } from 'react-router-dom'
 import { UserRound, Shapes, ListOrdered, ScanSearch } from 'lucide-react'
 import PageHeader from '@/components/PageHeader'

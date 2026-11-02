@@ -6,11 +6,14 @@ import { useApp } from '@/store/useApp'
 import { logout } from '@/lib/apiClient'
 import { savePersonDetails, savePreferences } from '@/lib/appDataService'
 import { DEFAULT_PERSONAL_PREFERENCES, normalizePersonalPreferences } from '@/lib/personalization'
+import VoicePrivacyControl from '@/components/VoicePrivacyControl'
 
 export default function Profile() {
   const { memories, lastSessionExperience, largeText, setLargeText, speechEnabled, setSpeechEnabled, supportedPerson, preferences, setPreferences, toggleAssistant } = useApp()
   const [personName, setPersonName] = useState(supportedPerson.name)
+  const [personalDetails, setPersonalDetails] = useState(supportedPerson.personalDetails.join('\n'))
   const [personNotice, setPersonNotice] = useState('')
+  const [detailsNotice, setDetailsNotice] = useState('')
   const [signingOut, setSigningOut] = useState(false)
   const [signOutError, setSignOutError] = useState('')
   const gardenState = gardenStateFor(lastSessionExperience, memories.length)
@@ -20,13 +23,24 @@ export default function Profile() {
   useEffect(() => {
     const fingerprint = JSON.stringify(safePreferences)
     if (lastSavedPreferences.current === fingerprint) return
-    lastSavedPreferences.current = fingerprint
-    void savePreferences(safePreferences).catch(() => undefined)
+    const timer = window.setTimeout(() => {
+      lastSavedPreferences.current = fingerprint
+      void savePreferences(safePreferences).catch(() => undefined)
+    }, 300)
+    return () => window.clearTimeout(timer)
   }, [safePreferences])
 
   useEffect(() => {
     setPersonName(supportedPerson.name)
   }, [supportedPerson.name])
+
+  useEffect(() => {
+    setPersonalDetails(supportedPerson.personalDetails.join('\n'))
+  }, [supportedPerson.personalDetails])
+
+  function detailLines(value: string) {
+    return [...new Set(value.split(/\n|,/).map((item) => item.trim()).filter(Boolean))]
+  }
 
   async function saveName(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
@@ -36,11 +50,24 @@ export default function Profile() {
       return
     }
     try {
-      const result = await savePersonDetails({ name, personalDetails: supportedPerson.personalDetails })
+      const result = await savePersonDetails({ name, personalDetails: detailLines(personalDetails) })
       setPersonName(result.value.name)
-      setPersonNotice(result.persistence === 'device' ? 'Name saved on this device; it will sync when connected.' : 'Name saved.')
+      setPersonNotice(result.persistence === 'device' ? 'Name and details saved on this device; they will sync when connected.' : 'Name and details saved.')
     } catch {
-      setPersonNotice('Name could not be saved. Please try again.')
+      setPersonNotice('Name and details could not be saved. Please try again.')
+    }
+  }
+
+  async function saveDetails() {
+    setDetailsNotice('')
+    try {
+      const result = await savePersonDetails({ name: supportedPerson.name, personalDetails: detailLines(personalDetails) })
+      setPersonalDetails(result.value.personalDetails.join('\n'))
+      setDetailsNotice(result.persistence === 'device'
+        ? 'Details saved on this device; they will sync when connected.'
+        : 'Details saved.')
+    } catch {
+      setDetailsNotice('Details could not be saved. Please try again.')
     }
   }
 
@@ -86,13 +113,14 @@ export default function Profile() {
           {personNotice && <p role="status" className="mt-2 text-sm text-garden-900">{personNotice}</p>}
         </form>
 
-        <label className="mt-4 block">
-          <span className="font-semibold">Helpful personal details</span>
-          <textarea value={supportedPerson.personalDetails.join('\n')} onChange={(event) => {
-            const details = event.target.value.split(/\n|,/).map((item) => item.trim()).filter(Boolean)
-            void savePersonDetails({ name: supportedPerson.name, personalDetails: details }).catch(() => undefined)
-          }} rows={4} className="mt-1 w-full rounded-xl border-2 border-mint-200 bg-white p-3" />
-        </label>
+        <div className="mt-4">
+          <label className="block">
+            <span className="font-semibold">Helpful personal details</span>
+            <textarea aria-label="Helpful personal details" value={personalDetails} onChange={(event) => { setPersonalDetails(event.target.value); setDetailsNotice('') }} rows={4} className="mt-1 w-full rounded-xl border-2 border-mint-200 bg-white p-3" />
+          </label>
+          <button type="button" onClick={() => void saveDetails()} className="mt-3 min-h-[48px] rounded-xl border-2 border-garden-700 bg-white px-4 font-semibold text-garden-900">Save details</button>
+          {detailsNotice && <p role="status" className="mt-2 text-sm text-garden-900">{detailsNotice}</p>}
+        </div>
       </section>
 
       <section className="mt-6 card p-4" aria-labelledby="profile-checkin-heading">
@@ -129,6 +157,10 @@ export default function Profile() {
         <Toggle label="Larger text" on={largeText} set={setLargeText} />
         <Toggle label="Mo speaks replies aloud" on={speechEnabled} set={setSpeechEnabled} />
       </div>
+      <div className="mt-4 card p-4">
+        <h2 className="mb-2 text-lg font-semibold">Voice and privacy</h2>
+        <VoicePrivacyControl />
+      </div>
 
       <section className="mt-8 card p-4" aria-labelledby="personalization-heading">
         <h2 id="personalization-heading" className="text-xl">Personalization</h2>
@@ -139,6 +171,7 @@ export default function Profile() {
               <option value="high-contrast">High contrast</option>
               <option value="calming-pastels">Calming pastels</option>
               <option value="warm-vintage">Warm vintage</option>
+              <option value="dark">Dark</option>
             </select>
           </label>
 
@@ -155,9 +188,38 @@ export default function Profile() {
               })}
             </div>
           </div>
+          <InterestField label="Favourite flower" value={safePreferences.favoriteFlower ?? ''} onChange={(value) => setPreferences({ favoriteFlower: value || null })} />
+          <InterestField label="Favourite bird" value={safePreferences.favoriteBird ?? ''} onChange={(value) => setPreferences({ favoriteBird: value || null })} />
+          <InterestField label="Favourite animal" value={safePreferences.favoriteAnimal ?? ''} onChange={(value) => setPreferences({ favoriteAnimal: value })} />
+          <InterestField label="Favourite song" value={safePreferences.favoriteSong ?? ''} onChange={(value) => setPreferences({ favoriteSong: value || null })} />
+          <InterestListField label="Interests and activities" help="Add any interests, separated by commas. These help choose familiar game objects." value={safePreferences.lifeActivityTags} onChange={(value) => setPreferences({ lifeActivityTags: value })} />
+          <InterestListField label="Favourite activities" value={safePreferences.favoriteActivities ?? []} onChange={(value) => setPreferences({ favoriteActivities: value })} />
+          <InterestListField label="Favourite foods" value={safePreferences.favoriteFoods ?? []} onChange={(value) => setPreferences({ favoriteFoods: value })} />
+          <InterestListField label="Favourite places" value={safePreferences.favoritePlaces ?? []} onChange={(value) => setPreferences({ favoritePlaces: value })} />
         </div>
       </section>
     </>
+  )
+}
+
+function InterestField({ label, value, onChange }: { label: string; value: string; onChange: (value: string) => void }) {
+  const id = `preference-${label.toLowerCase().replace(/[^a-z0-9]+/g, '-')}`
+  return (
+    <label htmlFor={id} className="block">
+      <span className="font-semibold">{label}</span>
+      <input id={id} value={value} onChange={(event) => onChange(event.target.value)} className="mt-1 min-h-[52px] w-full rounded-xl border-2 border-mint-200 bg-white px-4" />
+    </label>
+  )
+}
+
+function InterestListField({ label, help, value, onChange }: { label: string; help?: string; value: string[]; onChange: (value: string[]) => void }) {
+  const id = `preference-${label.toLowerCase().replace(/[^a-z0-9]+/g, '-')}`
+  return (
+    <label htmlFor={id} className="block">
+      <span className="font-semibold">{label}</span>
+      {help && <span className="mt-1 block text-sm text-ink/70">{help}</span>}
+      <textarea id={id} value={value.join(', ')} onChange={(event) => onChange([...new Set(event.target.value.split(',').map((item) => item.trim()).filter(Boolean))].slice(0, 12))} rows={2} className="mt-1 w-full rounded-xl border-2 border-mint-200 bg-white p-3" />
+    </label>
   )
 }
 

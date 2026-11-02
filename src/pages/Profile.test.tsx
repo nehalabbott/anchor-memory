@@ -1,9 +1,10 @@
-import { act, render, screen } from '@testing-library/react'
+import { act, render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { beforeEach, describe, expect, it } from 'vitest'
 import { MemoryRouter } from 'react-router-dom'
 import App from '@/App'
 import type { MemoryItem } from '@/lib/types'
+import { DEFAULT_PERSONAL_PREFERENCES } from '@/lib/personalization'
 import { useApp } from '@/store/useApp'
 
 function makeMemory(id: string, name: string, fields: Partial<MemoryItem> = {}): MemoryItem {
@@ -32,6 +33,9 @@ describe('Profile Part 2 connections', () => {
       assistantAction: null,
       assistantPrompt: null,
       events: [],
+      privacyShieldEnabled: true,
+      voiceListeningEnabled: false,
+      preferences: DEFAULT_PERSONAL_PREFERENCES,
     })
   })
 
@@ -47,6 +51,13 @@ describe('Profile Part 2 connections', () => {
     expect(screen.getByRole('button', { name: 'Sign out' })).toBeInTheDocument()
   })
 
+  it('makes voice privacy controls reachable from Profile and starts with listening off', () => {
+    mountProfile()
+    expect(screen.getByRole('region', { name: 'Voice and privacy controls' })).toBeInTheDocument()
+    expect(screen.getByText('Mic Off / Private')).toBeInTheDocument()
+    expect(useApp.getState().voiceListeningEnabled).toBe(false)
+  })
+
   it('lets the person using Anchor change and save their name', async () => {
     const user = userEvent.setup()
     mountProfile()
@@ -57,7 +68,39 @@ describe('Profile Part 2 connections', () => {
     await user.click(screen.getByRole('button', { name: 'Save name' }))
 
     expect(useApp.getState().supportedPerson.name).toBe('Priya')
-    expect(screen.getByRole('status')).toHaveTextContent('Name saved')
+    expect(screen.getByRole('status')).toHaveTextContent(/Name and details saved/)
+  })
+
+  it('saves helpful personal details only after the save button is tapped', async () => {
+    const user = userEvent.setup()
+    mountProfile()
+
+    const details = screen.getByRole('textbox', { name: 'Helpful personal details' })
+    await user.clear(details)
+    await user.type(details, 'Enjoys morning walks')
+    expect(useApp.getState().supportedPerson.personalDetails).not.toContain('Enjoys morning walks')
+
+    await user.click(screen.getByRole('button', { name: 'Save details' }))
+    await waitFor(() => expect(useApp.getState().supportedPerson.personalDetails).toContain('Enjoys morning walks'))
+    expect(await screen.findByRole('status')).toHaveTextContent(/Details saved/)
+  })
+
+  it('lets caregivers save a new free-text interest for personalized games', async () => {
+    const user = userEvent.setup()
+    mountProfile()
+    const interests = screen.getByLabelText(/Interests and activities/)
+    await user.type(interests, 'cricket')
+    expect(useApp.getState().preferences.lifeActivityTags).toContain('cricket')
+  })
+
+  it('lets the person using Anchor enable the dark theme', async () => {
+    const user = userEvent.setup()
+    mountProfile()
+
+    await user.selectOptions(screen.getByRole('combobox', { name: 'Theme' }), 'dark')
+
+    expect(useApp.getState().preferences.theme).toBe('dark')
+    await waitFor(() => expect(document.body).toHaveAttribute('data-theme', 'dark'))
   })
 
   it('opens the shared Mo assistant from A Helping Hand', async () => {

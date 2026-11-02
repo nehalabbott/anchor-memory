@@ -13,8 +13,8 @@ let baseUrl
 let directory
 let mockFetch
 
-async function listen(db = database) {
-  server = createServer({ database: db, env: TEST_ENV, fetchImpl: mockFetch, schemaVersion: 5, authEnabled: false })
+async function listen(db = database, env = TEST_ENV) {
+  server = createServer({ database: db, env, fetchImpl: mockFetch, schemaVersion: 5, authEnabled: false })
   await new Promise((resolve) => server.listen(0, '127.0.0.1', resolve))
   baseUrl = `http://127.0.0.1:${server.address().port}`
 }
@@ -66,6 +66,16 @@ describe('local application API', () => {
     expect(JSON.stringify(body)).not.toContain(TEST_ENV.GROQ_API_KEY)
   })
 
+  it('allows only explicitly configured cross-origin app requests', async () => {
+    await closeServer()
+    await listen(database, { ...TEST_ENV, CORS_ORIGINS: 'https://localhost' })
+    const allowed = await fetch(`${baseUrl}/api/health`, { headers: { Origin: 'https://localhost' } })
+    expect(allowed.status).toBe(200)
+    expect(allowed.headers.get('access-control-allow-origin')).toBe('https://localhost')
+    const blocked = await fetch(`${baseUrl}/api/health`, { headers: { Origin: 'https://unknown.example' } })
+    expect(blocked.status).toBe(403)
+  })
+
   it('gets an empty person then creates and updates the stable supported person', async () => {
     expect((await payload(await api('/api/person'))).person).toBeNull()
     const created = await payload(await createPerson())
@@ -80,12 +90,20 @@ describe('local application API', () => {
     const written = await payload(await api('/api/person/preferences', {
       method: 'PUT', body: {
         theme: 'calming-pastels', favoriteColors: ['green'], favoriteFlower: 'Jasmine', favoriteBird: 'Robin', favoriteSong: 'Morning Light',
-        lifeActivityTags: ['gardening', 'cooking'], favoriteFoods: ['Mango'], calmingSongReference: 'local-track-1',
+        lifeActivityTags: ['gardening', 'cooking'], favoriteFoods: ['Mango'], favoriteActivities: ['painting'],
+        favoritePlaces: ['Lalbagh'], calmingSongReference: 'local-track-1',
       },
     }))
     expect(written.preferences).toMatchObject({
       theme: 'calming-pastels', favoriteColors: ['green'], favoriteFlower: 'Jasmine', favoriteBird: 'Robin', favoriteSong: 'Morning Light',
-      lifeActivityTags: ['gardening', 'cooking'], favoriteFoods: ['Mango'], calmingSongReference: 'local-track-1',
+      lifeActivityTags: ['gardening', 'cooking'], favoriteFoods: ['Mango'], favoriteActivities: ['painting'],
+      favoritePlaces: ['Lalbagh'], calmingSongReference: 'local-track-1',
+    })
+    const partial = await payload(await api('/api/person/preferences', { method: 'PUT', body: { theme: 'warm-vintage' } }))
+    expect(partial.preferences).toMatchObject({
+      theme: 'warm-vintage', favoriteColors: ['green'], favoriteFlower: 'Jasmine', favoriteBird: 'Robin',
+      lifeActivityTags: ['gardening', 'cooking'], favoriteFoods: ['Mango'], favoriteActivities: ['painting'],
+      favoritePlaces: ['Lalbagh'],
     })
     expect((await payload(await api('/api/person/preferences'))).preferences.favoriteFlower).toBe('Jasmine')
   })

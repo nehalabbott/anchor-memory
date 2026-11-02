@@ -103,6 +103,22 @@ describe('global voice-awareness resource lifecycle', () => {
     expect(FakeRecognition.instances).toHaveLength(1)
   })
 
+  it('stops microphone capture and recognition when listening is turned off', async () => {
+    const { stream, track } = fakeStream()
+    setupMedia(stream)
+    const handlers = callbacks()
+    useApp.setState({ privacyShieldEnabled: false, voiceListeningEnabled: true })
+    startVoiceAwareness({ isAllowed: () => !useApp.getState().privacyShieldEnabled && useApp.getState().voiceListeningEnabled, ...handlers })
+    await Promise.resolve()
+    await Promise.resolve()
+
+    useApp.getState().setVoiceListeningEnabled(false)
+
+    expect(FakeRecognition.instances[0].stop).toHaveBeenCalledOnce()
+    expect(track.stop).toHaveBeenCalledOnce()
+    expect(useApp.getState().voiceListeningEnabled).toBe(false)
+  })
+
   it('does not restart recognition when the shield changes during the restart delay', async () => {
     const { stream, track } = fakeStream()
     setupMedia(stream)

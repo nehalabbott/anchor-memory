@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { fireEvent, render, screen } from '@testing-library/react'
 import { MemoryRouter } from 'react-router-dom'
 import { waitFor } from '@testing-library/react'
@@ -9,6 +9,10 @@ import { useScreenContext } from '@/store/useScreenContext'
 
 beforeEach(() => {
   useApp.setState({ memories: DEMO_MEMORIES, events: [], assistantOpen: false, assistantAction: null, assistantPrompt: null })
+})
+
+afterEach(() => {
+  vi.restoreAllMocks()
 })
 
 describe('advanced cognitive games', () => {
@@ -29,6 +33,33 @@ describe('advanced cognitive games', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Start playing' }))
     fireEvent.click(screen.getByRole('button', { name: 'Match' }))
     expect(useApp.getState().events.some((event) => event.type === 'response_submitted' && event.activityId === 'dual-n-back')).toBe(true)
+  })
+
+  it('feeds rapid answer interactions to adaptive difficulty without rebuilding the active board', () => {
+    useScreenContext.setState({ assessmentBaselineDifficulty: 3, difficultyLevel: 4 })
+    const startedAt = Date.now()
+    const clock = vi.spyOn(Date, 'now').mockReturnValue(startedAt)
+    const round = buildDualNBackRound(3, 0)
+    const wrongAnswer = round.correctAnswer === 'match' ? 'No Match' : 'Match'
+    render(<MemoryRouter><DualNBackGame /></MemoryRouter>)
+    fireEvent.click(screen.getByRole('button', { name: 'Start playing' }))
+    const board = screen.getByLabelText('Dual N-Back board')
+    const activeTileBeforeDifficultyChange = Array.from(board.querySelectorAll('button'))
+      .find((button) => button.textContent === '●')?.getAttribute('aria-label')
+    clock.mockReturnValue(startedAt + 20_001)
+
+    for (let attempt = 0; attempt < 3; attempt += 1) {
+      fireEvent.click(screen.getByRole('button', { name: wrongAnswer }))
+      if (attempt < 2) fireEvent.click(screen.getByRole('button', { name: 'Try again' }))
+    }
+
+    expect(useApp.getState().events.some((event) =>
+      event.type === 'rapid_taps' && 'activityId' in event && event.activityId === 'dual-n-back' && event.count >= 3,
+    )).toBe(true)
+    expect(useApp.getState().events.some((event) => event.type === 'difficulty_changed' && event.activityId === 'dual-n-back')).toBe(true)
+    expect(board.querySelectorAll('button')).toHaveLength(9)
+    expect(Array.from(board.querySelectorAll('button')).find((button) => button.textContent === '●')?.getAttribute('aria-label'))
+      .toBe(activeTileBeforeDifficultyChange)
   })
 
   it('allows trail making to recover after an invalid move and finish in order', () => {

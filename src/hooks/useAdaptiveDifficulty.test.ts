@@ -14,23 +14,22 @@ beforeEach(() => {
 })
 afterEach(() => vi.useRealTimers())
 
-describe('useAdaptiveDifficulty acoustic privacy boundary', () => {
-  it('omits acoustic state while Privacy Shield is on or voice listening is unavailable', () => {
-    const { result, rerender } = renderHook(() => useAdaptiveDifficulty())
-    act(() => { vi.advanceTimersByTime(30_000); result.current.recordFailure(2_000) })
-    expect(result.current.level).toBe(3)
-
-    act(() => useApp.setState({ privacyShieldEnabled: false, voiceListening: false }))
-    rerender()
-    act(() => result.current.reset(3, Date.now()))
-    act(() => { result.current.recordFailure(2_000) })
-    expect(result.current.level).toBe(3)
-  })
-
-  it('uses the existing structured frustration state only when capture is active and private mode is off', () => {
-    useApp.setState({ privacyShieldEnabled: false, voiceListening: true })
+describe('useAdaptiveDifficulty gameplay response adaptation', () => {
+  it('keeps one failure at the current level and adapts repeated errors while private', () => {
     const { result } = renderHook(() => useAdaptiveDifficulty())
     act(() => { vi.advanceTimersByTime(30_000); result.current.recordFailure(2_000) })
+    expect(result.current.level).toBe(3)
+    act(() => { result.current.recordFailure(2_000) })
+    expect(result.current.level).toBe(2)
+  })
+
+  it('adapts repeated long response times without microphone access', () => {
+    const { result } = renderHook(() => useAdaptiveDifficulty())
+    act(() => {
+      vi.advanceTimersByTime(30_000)
+      result.current.recordSuccess(12_000)
+      result.current.recordSuccess(12_000)
+    })
     expect(result.current.level).toBe(2)
   })
 

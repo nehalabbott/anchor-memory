@@ -8,9 +8,12 @@ export const DEFAULT_PERSONAL_PREFERENCES: PersonalPreferences = {
   favoriteBird: null,
   favoriteSong: null,
   lifeActivityTags: [],
+  favoriteFoods: [],
+  favoriteActivities: [],
+  favoritePlaces: [],
 }
 
-const ALLOWED_THEMES = new Set(['high-contrast', 'calming-pastels', 'warm-vintage'])
+const ALLOWED_THEMES = new Set(['high-contrast', 'calming-pastels', 'warm-vintage', 'dark'])
 const normalizeList = (value: unknown, maxItems = 12): string[] => {
   if (!Array.isArray(value)) return []
   return [...new Set(value.filter((entry): entry is string => typeof entry === 'string').map((entry) => entry.trim()).filter(Boolean).slice(0, maxItems))]
@@ -26,6 +29,11 @@ export function normalizePersonalPreferences(value?: Partial<PersonalPreferences
   next.favoriteBird = typeof value.favoriteBird === 'string' && value.favoriteBird.trim() ? value.favoriteBird.trim() : null
   next.favoriteSong = typeof value.favoriteSong === 'string' && value.favoriteSong.trim() ? value.favoriteSong.trim() : null
   next.lifeActivityTags = normalizeList(value.lifeActivityTags, 12)
+  next.favoriteAnimal = typeof value.favoriteAnimal === 'string' ? value.favoriteAnimal.trim() : ''
+  next.favoriteFoods = normalizeList(value.favoriteFoods, 12)
+  next.favoriteActivities = normalizeList(value.favoriteActivities, 12)
+  next.favoritePlaces = normalizeList(value.favoritePlaces, 12)
+  next.calmingSongReference = typeof value.calmingSongReference === 'string' ? value.calmingSongReference.trim() : undefined
   return next
 }
 
@@ -38,6 +46,10 @@ export function getPersonalizationContext() {
     favoriteBird: preferences.favoriteBird,
     favoriteSong: preferences.favoriteSong,
     lifeActivityTags: preferences.lifeActivityTags,
+    favoriteAnimal: preferences.favoriteAnimal,
+    favoriteFoods: preferences.favoriteFoods,
+    favoriteActivities: preferences.favoriteActivities,
+    favoritePlaces: preferences.favoritePlaces,
   }
 }
 

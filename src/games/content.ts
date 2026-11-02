@@ -1,21 +1,16 @@
-import type { MemoryItem } from '@/lib/types'
+import type { MemoryItem, PersonalPreferences } from '@/lib/types'
+import {
+  GENERIC_TOKENS, getPersonalizedGameTokens, slug, tokenGroup,
+} from './objectCatalog'
+import type { GameCategory, GameGlyph, GameToken } from './objectCatalog'
+
+export type { GameCategory, GameGlyph, GameToken } from './objectCatalog'
 
 export interface FacePrompt {
   id: string
   memory: MemoryItem
   choices: MemoryItem[]
   identityClue: string
-}
-
-export type GameGlyph = 'circle' | 'square' | 'triangle' | 'flower' | 'leaf' | 'apple' | 'sun' | 'cup' | 'camera' | 'basket' | 'bird' | 'chair'
-export type GameCategory = 'garden' | 'fruit' | 'kitchen' | 'shape' | 'everyday'
-
-export interface GameToken {
-  id: string
-  label: string
-  glyph: GameGlyph
-  category: GameCategory
-  memoryId?: string
 }
 
 export interface PatternRound {
@@ -48,29 +43,7 @@ export interface CategoryRound {
   sourceMemoryIds: string[]
 }
 
-interface PersonalToken {
-  label: string
-  category: GameCategory
-  memoryId: string
-}
-
-const GENERIC_TOKENS: GameToken[] = [
-  { id: 'generic-circle', label: 'Circle', glyph: 'circle', category: 'shape' },
-  { id: 'generic-square', label: 'Square', glyph: 'square', category: 'shape' },
-  { id: 'generic-triangle', label: 'Triangle', glyph: 'triangle', category: 'shape' },
-  { id: 'generic-flower', label: 'Flower', glyph: 'flower', category: 'garden' },
-  { id: 'generic-leaf', label: 'Leaf', glyph: 'leaf', category: 'garden' },
-  { id: 'generic-apple', label: 'Apple', glyph: 'apple', category: 'fruit' },
-  { id: 'generic-sun', label: 'Sun', glyph: 'sun', category: 'everyday' },
-  { id: 'generic-cup', label: 'Cup', glyph: 'cup', category: 'kitchen' },
-  { id: 'generic-camera', label: 'Camera', glyph: 'camera', category: 'everyday' },
-  { id: 'generic-basket', label: 'Basket', glyph: 'basket', category: 'everyday' },
-  { id: 'generic-bird', label: 'Bird', glyph: 'bird', category: 'everyday' },
-  { id: 'generic-chair', label: 'Chair', glyph: 'chair', category: 'everyday' },
-  { id: 'generic-plant', label: 'Plant', glyph: 'flower', category: 'garden' },
-]
-
-const unique = (values: string[]) => [...new Set(values.map((value) => value.trim()).filter(Boolean))]
+const unique = (values: string[]) => [...new Set(values.filter(Boolean))]
 const isRememberedPerson = (memory: MemoryItem) => memory.kind === 'person' || Boolean(memory.relationship)
 const rotate = <T,>(items: T[], offset: number) => {
   const start = items.length ? offset % items.length : 0
@@ -94,97 +67,93 @@ export function buildFacePrompts(memories: MemoryItem[]): FacePrompt[] {
   })
 }
 
-function categoryFor(label: string): GameCategory {
-  const value = label.toLocaleLowerCase()
-  if (/garden|flower|marigold|seed|leaf|plant|watering/.test(value)) return 'garden'
-  if (/apple|banana|orange|mango|fruit|berry|grape|pear/.test(value)) return 'fruit'
-  if (/tea|teapot|cup|cake|kitchen|plate|spoon|bake/.test(value)) return 'kitchen'
-  return 'everyday'
+function uniqueTokens(tokens: GameToken[]) {
+  const ids = new Set<string>()
+  return tokens.filter((token) => !ids.has(token.id) && Boolean(ids.add(token.id)))
 }
 
-function glyphFor(label: string, category = categoryFor(label)): GameGlyph {
-  const value = label.toLocaleLowerCase()
-  if (/flower|marigold|seed|plant/.test(value)) return 'flower'
-  if (/leaf|tree|cedar/.test(value)) return 'leaf'
-  if (/apple|mango|orange|banana|fruit/.test(value)) return 'apple'
-  if (/sun/.test(value)) return 'sun'
-  if (/tea|teapot|cup|cake|bake/.test(value)) return 'cup'
-  if (/camera|photograph/.test(value)) return 'camera'
-  if (/basket/.test(value)) return 'basket'
-  if (/bird/.test(value)) return 'bird'
-  if (/chair/.test(value)) return 'chair'
-  if (category === 'garden') return 'leaf'
-  if (category === 'fruit') return 'apple'
-  if (category === 'kitchen') return 'cup'
-  return 'circle'
-}
-
-function personalTokens(memories: MemoryItem[]): PersonalToken[] {
-  return memories.flatMap((memory) => [
-    ...(memory.objects ?? []),
-    ...(memory.activities ?? []),
-    ...(memory.places ?? []),
-  ].map((label) => ({ label: label.trim(), category: categoryFor(label), memoryId: memory.id })))
-    .filter((item) => item.label.length > 0)
-    .filter((item, index, all) => all.findIndex((other) => other.label.toLocaleLowerCase() === item.label.toLocaleLowerCase()) === index)
-}
-
-function tokenFromPersonal(item: PersonalToken, index: number): GameToken {
-  return {
-    id: `personal-${item.memoryId}-${index}`,
-    label: item.label,
-    glyph: glyphFor(item.label, item.category),
-    category: item.category,
-    memoryId: item.memoryId,
+function focusedTokens(tokens: GameToken[]) {
+  const groups = new Map<string, GameToken[]>()
+  for (const token of tokens) {
+    const group = token.interestGroup ?? tokenGroup(token.label)
+    if (group === 'everyday' || group === 'shape') continue
+    groups.set(group, [...(groups.get(group) ?? []), token])
   }
+  const sourceRank = (items: GameToken[]) => Math.min(...items.map((item) =>
+    item.source === 'memory' ? 0 : item.source === 'preference' ? 1 : item.source === 'catalog' ? 2 : 3))
+  const preferredGroup = [...groups.values()]
+    .filter((items) => items.length >= 2)
+    .sort((left, right) => sourceRank(left) - sourceRank(right) || right.length - left.length)[0]
+  return preferredGroup ?? tokens
 }
 
-export function buildPatternRounds(memories: MemoryItem[]): PatternRound[] {
-  const personalPair = personalTokens(memories).slice(0, 2).map(tokenFromPersonal)
-  const first = personalPair[0] ?? GENERIC_TOKENS[0]
-  const secondCandidate = personalPair[1] ?? (first.category === 'garden' ? GENERIC_TOKENS[4]
-    : first.category === 'fruit' ? GENERIC_TOKENS[7]
-      : first.category === 'kitchen' ? GENERIC_TOKENS[9]
-        : GENERIC_TOKENS[1])
-  const second = secondCandidate.glyph === first.glyph
-    ? GENERIC_TOKENS.find((token) => token.glyph !== first.glyph) ?? GENERIC_TOKENS[1]
-    : secondCandidate
-  const title = personalPair.length ? `${first.category === 'garden' ? 'Garden' : first.category === 'fruit' ? 'Fruit' : first.category === 'kitchen' ? 'Familiar object' : 'Familiar'} pattern` : 'Shape pattern'
-  const sourceMemoryIds = unique(personalPair.map((token) => token.memoryId ?? ''))
+function distinctPatternPair(tokens: GameToken[]): [GameToken, GameToken] | null {
+  const first = tokens[0]
+  if (!first) return null
+  const candidate = tokens.find((token) => token.id !== first.id && token.glyph !== first.glyph)
+  if (candidate) return [first, candidate]
+  const fallback = GENERIC_TOKENS.find((token) => token.id !== first.id && token.glyph !== first.glyph)
+  return fallback ? [first, fallback] : null
+}
+
+export function buildPatternRounds(memories: MemoryItem[], preferences?: Partial<PersonalPreferences>): PatternRound[] {
+  const personal = getPersonalizedGameTokens(memories, preferences)
+  const groupedTokens = focusedTokens(personal)
+  const personalGroups = new Map<string, GameToken[]>()
+  for (const token of groupedTokens) {
+    const group = token.interestGroup ?? tokenGroup(token.label)
+    personalGroups.set(group, [...(personalGroups.get(group) ?? []), token])
+  }
+  const patternGroups = [...personalGroups.values()].filter((group) => group.length >= 2)
   const patterns = [
-    { values: [first, second, first, second], answer: first },
-    { values: [second, first, second, first], answer: second },
-    { values: [first, first, second, first, first], answer: second },
+    { order: [0, 1, 0, 1], answerIndex: 0 },
+    { order: [1, 0, 1, 0], answerIndex: 1 },
+    { order: [0, 0, 1, 0, 0], answerIndex: 1 },
   ]
-  return patterns.map(({ values, answer }, index) => ({
-    id: `pattern-${index + 1}`,
-    title,
-    instruction: 'Look at the pattern. Which item comes next?',
-    pattern: values,
-    answer,
-    choices: rotate([
+  return patterns.map(({ order, answerIndex }, index) => {
+    const selectedGroup = patternGroups[index % Math.max(1, patternGroups.length)] ?? groupedTokens
+    const pairOffset = patternGroups.length ? (Math.floor(index / patternGroups.length) * 2) % selectedGroup.length : 0
+    const candidatePair = distinctPatternPair(rotate(selectedGroup, pairOffset)) ?? [GENERIC_TOKENS[0], GENERIC_TOKENS[1]]
+    const [first, second] = candidatePair
+    const values = order.map((position) => position === 0 ? first : second)
+    const answer = candidatePair[answerIndex]
+    const pair = candidatePair
+    const title = personal.length
+      ? `${(first.interestGroup ?? tokenGroup(first.label))[0].toLocaleUpperCase()}${(first.interestGroup ?? tokenGroup(first.label)).slice(1)} pattern`
+      : 'Shape pattern'
+    const sourceMemoryIds = unique(pair.map((token) => token.memoryId ?? ''))
+    const paired = answer.id === first.id ? second : first
+    const choices = rotate(uniqueTokens([
       answer,
-      answer.id === first.id ? second : first,
-      ...GENERIC_TOKENS.filter((token) => token.id !== answer.id && token.id !== first.id && token.id !== second.id && token.glyph !== answer.glyph),
-    ].filter((token, tokenIndex, tokens) => tokens.findIndex((candidate) => candidate.id === token.id) === tokenIndex), index),
-    clue: 'Notice the items that repeat, and look at what follows the pair.',
-    sourceMemoryIds,
-  }))
+      paired,
+      ...personal.filter((token) => token.id !== answer.id && token.id !== paired.id && token.glyph !== answer.glyph),
+      ...GENERIC_TOKENS.filter((token) => token.glyph !== answer.glyph),
+    ]).slice(0, 4), index)
+    return {
+      id: `pattern-${index + 1}`,
+      title,
+      instruction: 'Look at the pattern. Which item comes next?',
+      pattern: values,
+      answer,
+      choices,
+      clue: 'Notice the items that repeat, and look at what follows the pair.',
+      sourceMemoryIds,
+    }
+  })
 }
 
-function sequencePool(memories: MemoryItem[]): GameToken[] {
-  const personal = personalTokens(memories).map(tokenFromPersonal)
-  const pool = [...personal, ...GENERIC_TOKENS].filter((token, index, all) => all.findIndex((other) => other.label.toLocaleLowerCase() === token.label.toLocaleLowerCase()) === index)
-  return pool.slice(0, 6)
+function sequencePool(memories: MemoryItem[], preferences?: Partial<PersonalPreferences>): GameToken[] {
+  const personal = getPersonalizedGameTokens(memories, preferences)
+  return uniqueTokens([...focusedTokens(personal), ...personal, ...GENERIC_TOKENS]).slice(0, 6)
 }
 
-export function buildSequenceRounds(memories: MemoryItem[], maxSequenceLength = 4): SequenceRound[] {
-  const pool = sequencePool(memories)
+export function buildSequenceRounds(memories: MemoryItem[], maxSequenceLength = 4, preferences?: Partial<PersonalPreferences>): SequenceRound[] {
+  const pool = sequencePool(memories, preferences)
   const length = Math.max(2, Math.min(pool.length, maxSequenceLength))
   const sequences = [
     pool.slice(0, Math.min(3, length)),
-    [pool[2], pool[0], pool[3], pool[1], pool[4], pool[5]].filter((token): token is GameToken => Boolean(token)).slice(0, length),
-    [pool[1], pool[3], pool[0], pool[4], pool[2], pool[5]].filter((token): token is GameToken => Boolean(token)).slice(0, length),
+    rotate(pool, 2).slice(0, length),
+    rotate(pool, 4).slice(0, length),
   ]
   return sequences.map((items, index) => ({
     id: `sequence-${index + 1}`,
@@ -192,40 +161,16 @@ export function buildSequenceRounds(memories: MemoryItem[], maxSequenceLength = 
     instruction: 'Study the items, hide them, then build the same order.',
     items,
     choices: pool,
-    sourceMemoryIds: unique(items.map((token) => token?.memoryId ?? '')),
+    sourceMemoryIds: unique(items.map((token) => token.memoryId ?? '')),
   }))
 }
 
-function makeCategoryItem(id: string, label: string, glyph: GameGlyph, category: GameCategory, memoryId?: string): GameToken {
-  return { id, label, glyph, category, memoryId }
+function makeCategoryItem(id: string, label: string, glyph: GameGlyph, category: GameCategory, interestGroup?: string, memoryId?: string): GameToken {
+  return { id, label, glyph, category, interestGroup, memoryId }
 }
 
-export function buildCategoryRounds(memories: MemoryItem[]): CategoryRound[] {
-  const tokens = personalTokens(memories)
-  const personalGroups = (['garden', 'fruit', 'kitchen'] as const).map((category) => ({
-    category,
-    items: tokens.filter((token) => token.category === category).slice(0, 3),
-  })).filter(({ items }) => items.length >= 2)
-  const rounds: CategoryRound[] = personalGroups.map((personalRound) => {
-    const items = personalRound.items.map((item, index) => makeCategoryItem(
-      `personal-category-${personalRound.category}-${item.memoryId}-${index}`,
-      item.label, glyphFor(item.label, item.category), item.category, item.memoryId,
-    ))
-    const oddOneOut = personalRound.category === 'garden' ? GENERIC_TOKENS[11]
-      : personalRound.category === 'fruit' ? GENERIC_TOKENS[9] : GENERIC_TOKENS[10]
-    const groupName = personalRound.category === 'garden' ? 'garden-related items'
-      : personalRound.category === 'fruit' ? 'fruits' : 'kitchen items'
-    items.push(oddOneOut)
-    return {
-      id: `category-personal-${personalRound.category}`,
-      title: personalRound.category === 'garden' ? 'Garden group' : personalRound.category === 'fruit' ? 'Fruit group' : 'Kitchen group',
-      instruction: 'Which one does not belong with the others?', items, answerId: oddOneOut.id,
-      explanation: `The other items are all ${groupName}.`,
-      sourceMemoryIds: unique(personalRound.items.map((item) => item.memoryId)),
-    }
-  })
-
-  const genericRounds: CategoryRound[] = [
+function genericCategoryRounds(): CategoryRound[] {
+  return [
     {
       id: 'category-fruit', title: 'Everyday groups', instruction: 'Which one does not belong with the others?',
       items: [GENERIC_TOKENS[5], makeCategoryItem('generic-banana', 'Banana', 'apple', 'fruit'), makeCategoryItem('generic-orange', 'Orange', 'apple', 'fruit'), GENERIC_TOKENS[11]],
@@ -242,7 +187,37 @@ export function buildCategoryRounds(memories: MemoryItem[]): CategoryRound[] {
       answerId: GENERIC_TOKENS[11].id, explanation: 'Three are garden things; the chair belongs to a different group.', sourceMemoryIds: [],
     },
   ]
-  return [...rounds, ...genericRounds].map((round, index) => ({ ...round, items: rotate(round.items, index + 1) }))
+}
+
+export function buildCategoryRounds(memories: MemoryItem[], preferences?: Partial<PersonalPreferences>): CategoryRound[] {
+  const tokens = getPersonalizedGameTokens(memories, preferences)
+  const groups = new Map<string, GameToken[]>()
+  for (const token of tokens) {
+    const group = token.interestGroup ?? tokenGroup(token.label)
+    if (group === 'everyday' || group === 'shape') continue
+    groups.set(group, [...(groups.get(group) ?? []), token])
+  }
+  const personalizedRounds: CategoryRound[] = []
+  for (const [group, entries] of groups) {
+    const uniqueEntries = uniqueTokens(entries).slice(0, 3)
+    if (uniqueEntries.length < 3) continue
+    const groupCategory = uniqueEntries[0].category
+    const outlier = GENERIC_TOKENS.find((token) => token.category !== groupCategory && token.id === 'generic-chair')
+      ?? GENERIC_TOKENS.find((token) => token.category !== groupCategory && !uniqueEntries.some((item) => item.label.toLocaleLowerCase() === token.label.toLocaleLowerCase()))
+    if (!outlier) continue
+    const label = group.replace(/-/g, ' ')
+    personalizedRounds.push({
+      id: `category-personal-${slug(group)}`,
+      title: `${label[0]?.toLocaleUpperCase() ?? ''}${label.slice(1)} group`,
+      instruction: 'Which one does not belong with the others?',
+      items: [...uniqueEntries, outlier],
+      answerId: outlier.id,
+      explanation: `The other items are all related to ${label}.`,
+      sourceMemoryIds: unique(uniqueEntries.map((token) => token.memoryId ?? '')),
+    })
+  }
+  const rounds = [...personalizedRounds, ...genericCategoryRounds()]
+  return rounds.map((round, index) => ({ ...round, items: rotate(round.items, index + 1) }))
 }
 
 export function initials(name: string) {

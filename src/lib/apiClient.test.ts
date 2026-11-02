@@ -8,6 +8,7 @@ const originalFetch = globalThis.fetch
 
 afterEach(() => {
   globalThis.fetch = originalFetch
+  vi.unstubAllEnvs()
   vi.restoreAllMocks()
 })
 
@@ -23,6 +24,23 @@ describe('frontend backend API client', () => {
 
     expect((await getPerson())?.id).toBe('supported-person-1')
     expect(fetchMock).toHaveBeenCalledOnce()
+  })
+
+  it('uses an explicitly configured absolute backend URL when building for Android', async () => {
+    vi.stubEnv('VITE_API_BASE_URL', 'https://api.anchor.example/')
+    vi.resetModules()
+    const configuredClient = await import('./apiClient')
+    const fetchMock = vi.fn(async () => new Response(JSON.stringify({
+      person: { id: 'supported-person-1', name: 'M', personalDetails: [], createdAt: 1, updatedAt: 1 },
+    }), { status: 200, headers: { 'Content-Type': 'application/json' } }))
+    globalThis.fetch = fetchMock as typeof fetch
+
+    await configuredClient.getPerson()
+
+    expect(fetchMock).toHaveBeenCalledWith('https://api.anchor.example/api/person', expect.objectContaining({
+      credentials: 'include',
+    }))
+    vi.resetModules()
   })
 
   it('sends JSON for updates and propagates API status/code safely', async () => {

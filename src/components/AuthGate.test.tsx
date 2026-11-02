@@ -1,9 +1,14 @@
-import { render, screen, waitFor } from '@testing-library/react'
+import { fireEvent, render, screen, waitFor } from '@testing-library/react'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
-const api = vi.hoisted(() => ({
-  getSession: vi.fn(), login: vi.fn(), logout: vi.fn(), register: vi.fn(),
-}))
+const api = vi.hoisted(() => {
+  class BackendApiError extends Error {
+    constructor(message: string, readonly status: number) {
+      super(message)
+    }
+  }
+  return { BackendApiError, getSession: vi.fn(), login: vi.fn(), logout: vi.fn(), register: vi.fn() }
+})
 vi.mock('@/lib/apiClient', () => api)
 
 import AuthGate from './AuthGate'
@@ -37,5 +42,25 @@ describe('AuthGate patient context isolation', () => {
     expect(useApp.getState().preferences.favoriteFlower).toBeNull()
     expect(useApp.getState().pendingMemoryIds).toEqual([])
     expect(localStorage.getItem('anchor-v1')).not.toContain('A-PRIVATE-MEMORY-MARKER')
+  })
+
+  it('lets the person continue with local data when the backend cannot be reached', async () => {
+    api.getSession.mockRejectedValue(new api.BackendApiError('Backend unavailable.', 0))
+    render(<AuthGate><p>On-device app</p></AuthGate>)
+
+    expect(await screen.findByRole('status')).toHaveTextContent('The Anchor server is unavailable.')
+    fireEvent.click(screen.getByRole('button', { name: 'Continue with on-device data' }))
+
+    expect(await screen.findByText('On-device app')).toBeInTheDocument()
+    expect(useApp.getState().supportedPerson.id).toBe('patient-a')
+    expect(useApp.getState().memories[0].id).toBe('a-memory')
+  })
+
+  it('does not offer local-only mode for backend errors other than connectivity failures', async () => {
+    api.getSession.mockRejectedValue(new api.BackendApiError('Invalid response.', 502))
+    render(<AuthGate><p>Private app</p></AuthGate>)
+
+    await screen.findByRole('heading', { name: 'Welcome back' })
+    expect(screen.queryByRole('button', { name: 'Continue with on-device data' })).not.toBeInTheDocument()
   })
 })

@@ -60,6 +60,8 @@ describe('garden rendering', () => {
   it('uses aquarium-specific mood wording', () => {
     render(<MemoryRouter><Garden /></MemoryRouter>)
     expect(screen.getByText(/Aquarium mood:/i)).toBeInTheDocument()
+    expect(screen.queryByText(/fish are moving slowly/i)).not.toBeInTheDocument()
+    expect(screen.queryByText(/full of gentle motion/i)).not.toBeInTheDocument()
   })
 
   it('provides an accessible sound toggle', () => {

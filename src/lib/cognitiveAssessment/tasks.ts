@@ -25,8 +25,8 @@ export const ASSESSMENT_PROMPTS: AssessmentPrompt[] = [
   },
   {
     id: 'naming', domain: 'naming', title: 'Name familiar things',
-    instruction: 'Please name the objects shown. You can type the answer or say it aloud if you choose.',
-    answer: 'chair, flower, window', helper: 'Avoid guessing. A partial answer is still useful to the check-in.',
+    instruction: 'Look at each picture and type the object names you recognize, separated by commas.',
+    answer: 'chair, flower, window, cup', helper: 'A partial answer is fine.',
     choices: ['chair', 'flower', 'window', 'cup'],
   },
   {
@@ -37,12 +37,12 @@ export const ASSESSMENT_PROMPTS: AssessmentPrompt[] = [
   },
   {
     id: 'attention', domain: 'attention', title: 'A digit span',
-    instruction: 'Please remember the number. Then type it back when you are ready.',
+    instruction: 'Remember the number shown. You can hide it when you are ready to type it back.',
     answer: '6428', helper: 'You may take as long as you need. Try the number in the order shown.',
   },
   {
     id: 'language', domain: 'language', title: 'A language repetition check-in',
-    instruction: 'Please type this short sentence: The garden is quiet today.',
+    instruction: 'Read the sentence shown. Hide it when you are ready, then type it from memory.',
     answer: 'the garden is quiet today', helper: 'Exact wording is not essential. A close answer is fine.',
   },
   {

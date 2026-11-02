@@ -116,12 +116,13 @@ export function sessionTokenFromCookie(cookieHeader = '') {
 }
 
 export function makeSessionCookie(token, expiresAt, secure = false) {
-  const securePart = secure ? '; Secure' : ''
-  return `anchor_session=${encodeURIComponent(token)}; HttpOnly; SameSite=Lax; Path=/; Max-Age=${Math.max(1, Math.floor((expiresAt - Date.now()) / 1000))}${securePart}`
+  const attributes = secure ? '; Secure; SameSite=None' : '; SameSite=Lax'
+  return `anchor_session=${encodeURIComponent(token)}; HttpOnly${attributes}; Path=/; Max-Age=${Math.max(1, Math.floor((expiresAt - Date.now()) / 1000))}`
 }
 
-export function makeSessionClearedCookie() {
-  return 'anchor_session=; HttpOnly; SameSite=Lax; Path=/; Max-Age=0'
+export function makeSessionClearedCookie(secure = false) {
+  const attributes = secure ? '; Secure; SameSite=None' : '; SameSite=Lax'
+  return `anchor_session=; HttpOnly${attributes}; Path=/; Max-Age=0`
 }
 
 export { hashPassword, verifyPassword }

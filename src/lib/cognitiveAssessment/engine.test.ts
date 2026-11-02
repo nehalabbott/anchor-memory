@@ -4,6 +4,7 @@ import {
   ASSESSMENT_DOMAINS,
   createAssessmentSession,
   scoreAssessment,
+  scoreOrientationAnswer,
   stageForScore,
   baselineDifficultyForStage,
 } from './engine'
@@ -28,6 +29,7 @@ describe('MoCA-style screening assessment engine', () => {
       language: 5,
       orientation: 7,
     })
+
     expect(scored.score).toBe(30)
     expect(scored.status).toBe('completed')
     expect(scored.domains).toMatchObject({
@@ -38,6 +40,14 @@ describe('MoCA-style screening assessment engine', () => {
       language: { score: 5, maxScore: 5 },
       orientation: { score: 7, maxScore: 7 },
     })
+  })
+
+  it('scores orientation by matching the date components instead of rewarding any response', () => {
+    const date = new Date(2026, 9, 6)
+    expect(scoreOrientationAnswer('6 October 2026 Tuesday at home', date)).toBe(7)
+    expect(scoreOrientationAnswer('6 October', date)).toBe(3)
+    expect(scoreOrientationAnswer('something', date)).toBe(2)
+    expect(scoreOrientationAnswer('', date)).toBe(0)
   })
 
   it('clamps partial domain results and maps score bands to support-oriented stages', () => {

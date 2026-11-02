@@ -1,5 +1,7 @@
 import { useEffect } from 'react'
-import { Outlet } from 'react-router-dom'
+import { Outlet, useLocation, useNavigate } from 'react-router-dom'
+import { App as CapacitorApp } from '@capacitor/app'
+import { Capacitor } from '@capacitor/core'
 import BottomNav from './BottomNav'
 import AssistantBar from './AssistantBar'
 import AssistantPanel from './AssistantPanel'
@@ -25,6 +27,8 @@ const COLOR_MAP = {
 } as const
 
 export default function Layout() {
+  const navigate = useNavigate()
+  const location = useLocation()
   const largeText = useApp((s) => s.largeText)
   const preferences = useApp((s) => s.preferences)
   const dataSyncStatus = useApp((s) => s.dataSyncStatus)
@@ -56,12 +60,37 @@ export default function Layout() {
       window.clearInterval(retryTimer)
     }
   }, [])
+  useEffect(() => {
+    if (!Capacitor.isNativePlatform()) return
+    let active = true
+    let removeListener: (() => void) | undefined
+    void CapacitorApp.addListener('backButton', ({ canGoBack }) => {
+      if (useApp.getState().assistantOpen) {
+        useApp.getState().toggleAssistant(false)
+        return
+      }
+      if (canGoBack && window.history.state?.idx > 0) {
+        navigate(-1)
+        return
+      }
+      if (location.pathname !== '/') {
+        navigate(location.pathname.startsWith('/games/') ? '/games' : '/', { replace: true })
+      }
+    }).then((listener) => {
+      if (active) removeListener = () => { void listener.remove() }
+      else void listener.remove()
+    })
+    return () => {
+      active = false
+      removeListener?.()
+    }
+  }, [location.pathname, navigate])
   return (
     <div className="h-full flex justify-center bg-garden-900/10">
       <div className={`relative h-full w-full max-w-[480px] flex flex-col bg-mist shadow-soft ${largeText ? 'text-[1.25rem]' : ''}`}>
         <a href="#main" className="sr-only focus:not-sr-only focus:absolute focus:top-2 focus:left-2 focus:z-50 focus:bg-white focus:p-3 focus:rounded-xl">Skip to content</a>
         <ScreenContextSync />
-        <main id="main" className="flex-1 overflow-y-auto px-5 pt-6 pb-4">
+        <main id="main" className="flex-1 overflow-y-auto px-4 sm:px-5 pt-[calc(1rem+env(safe-area-inset-top))] sm:pt-[calc(1.5rem+env(safe-area-inset-top))] pb-3 sm:pb-4">
           <Outlet />
         </main>
         <VoiceAwarenessController />

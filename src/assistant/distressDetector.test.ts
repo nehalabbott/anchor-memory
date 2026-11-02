@@ -11,6 +11,12 @@ const failedResponse = (at: number) => ({
   type: 'response_submitted' as const, at, sessionId: 'test-session', activityId: 'faces' as const,
   promptId: 'prompt', responseId: 'response', correct: false,
 })
+const response = (at: number, correct: boolean, responseLatencyMs = 2_000) => ({
+  ...failedResponse(at), correct, responseLatencyMs,
+})
+const rapidTaps = (at: number, count: number) => ({
+  type: 'rapid_taps' as const, at, sessionId: 'test-session', activityId: 'faces' as const, count,
+})
 
 describe('conservative interaction awareness', () => {
   it('does not label one isolated weak signal as distress', () => {
@@ -26,6 +32,30 @@ describe('conservative interaction awareness', () => {
     }))
     expect(result).toMatchObject({ state: 'possible_frustration', confidence: expect.any(Number) })
     expect(result.reasons).toContain('repeated unsuccessful responses')
+  })
+
+  it('detects repeated gameplay struggle without a transcript or microphone signals', () => {
+    const result = detectAwareness(base({
+      events: [response(now - 4_000, false), response(now - 3_000, false), rapidTaps(now - 2_000, 3)],
+    }))
+    expect(result.state).toBe('possible_frustration')
+    expect(result.reasons).toContain('repeated rapid interactions')
+  })
+
+  it('does not trigger for ordinary taps or a single slow response', () => {
+    expect(detectAwareness(base({
+      events: [response(now - 2_000, false, 12_000), rapidTaps(now - 1_000, 2)],
+    })).state).toBe('calm')
+  })
+
+  it('ignores struggle events outside the rolling window', () => {
+    expect(detectAwareness(base({
+      events: [
+        response(now - 100_000, false),
+        response(now - 99_000, false),
+        rapidTaps(now - 98_000, 3),
+      ],
+    })).state).toBe('calm')
   })
 
   it('combines confusion language with game difficulty', () => {

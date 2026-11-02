@@ -192,17 +192,25 @@ export function createServer({ database, fetchImpl = fetch, env = process.env, s
   if (!database) throw new Error('A migrated database connection is required to create the API server.')
   const repositories = createRepositories(database)
   const assistantHandler = (req, res) => assistant(req, res, { env, fetchImpl })
-  const handler = createApiHandler({ repositories, assistantHandler, groqConfigured: Boolean(env.GROQ_API_KEY), schemaVersion, authEnabled })
+  const allowedOrigins = [...new Set([
+    'http://localhost:5173',
+    'http://127.0.0.1:5173',
+    ...String(env.CORS_ORIGINS ?? '').split(',').map((origin) => origin.trim()).filter(Boolean),
+  ])]
+  const handler = createApiHandler({
+    repositories, assistantHandler, groqConfigured: Boolean(env.GROQ_API_KEY), schemaVersion, authEnabled,
+    allowedOrigins, cookieSecure: env.COOKIE_SECURE === 'true',
+  })
   return http.createServer(handler)
 }
 
-export async function startServer({ filename, port = process.env.PORT || 8787 } = {}) {
+export async function startServer({ filename, port = process.env.PORT || 8787, host = process.env.HOST || '127.0.0.1' } = {}) {
   const database = await openDatabase(filename ? { filename } : undefined)
   const versionRow = await database.get('PRAGMA user_version')
   const server = createServer({ database, schemaVersion: versionRow.user_version })
   await new Promise((resolve, reject) => {
     server.once('error', reject)
-    server.listen(port, '127.0.0.1', resolve)
+    server.listen(port, host, resolve)
   }).catch(async (error) => {
     await database.close()
     throw error
@@ -214,7 +222,7 @@ const isMainModule = process.argv[1] && import.meta.url === pathToFileURL(proces
 if (isMainModule) {
   startServer().then(({ server, database }) => {
     const port = process.env.PORT || 8787
-    console.log(`Anchor API server on http://localhost:${port}`)
+    console.log(`Anchor API server on ${process.env.HOST || '127.0.0.1'}:${port}`)
     const shutdown = () => server.close(() => { void database.close() })
     process.once('SIGINT', shutdown)
     process.once('SIGTERM', shutdown)

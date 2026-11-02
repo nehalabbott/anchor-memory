@@ -4,9 +4,12 @@ import { Brain, ChevronLeft, Route, Sparkles, Tags } from 'lucide-react'
 import { useAdaptiveDifficulty } from '@/hooks/useAdaptiveDifficulty'
 import { createActivitySession, finishActivitySession, recordActivityEvent } from '@/lib/sessionPersistence'
 import type { ActivityId, InteractionEvent, MemoryItem, Part2InteractionEvent } from '@/lib/types'
+import type { PersonalPreferences } from '@/lib/types'
+import { getPersonalizedGameTokens, tokenGroup } from '@/games/objectCatalog'
 import { useApp } from '@/store/useApp'
 import { useScreenContext } from '@/store/useScreenContext'
 import { FeedbackPopup, HowToPlayCard, choiceStateClass, type FeedbackStatus } from '@/games/GameFeedback'
+import GameplaySupportSuggestion from '@/components/GameplaySupportSuggestion'
 
 const COLOR_MAP = {
   Blue: '#4F9AE8',
@@ -52,7 +55,7 @@ export interface CategoryAssociationPrompt {
   instruction: string
   choices: Array<{ id: string; label: string; group: string }>
   answerId: string
-  source: 'memory' | 'generic'
+  source: 'memory' | 'preference' | 'catalog' | 'generic'
 }
 
 function clamp(value: number, min: number, max: number) {
@@ -113,24 +116,6 @@ export function buildTrailMakingRound(level: number): TrailMakingRound {
   return { id: `trail-${level}`, nodes, sequence, targetIndex: 0 }
 }
 
-function itemBuckets(memories: MemoryItem[]) {
-  const items: Array<{ label: string; group: string }> = []
-  for (const memory of memories) {
-    const labels = [...(memory.objects ?? []), ...(memory.activities ?? []), ...(memory.places ?? [])]
-    for (const label of labels) {
-      const value = label.trim()
-      if (!value) continue
-      const group = /garden|flower|plant|seed|watering|marigold|leaf/.test(value.toLowerCase()) ? 'gardening'
-        : /tea|cake|cup|mango|apple|kitchen|cook|tea/.test(value.toLowerCase()) ? 'kitchen'
-        : /music|song|piano|radio|dance|sing/.test(value.toLowerCase()) ? 'music'
-        : /family|grandchild|daughter|son|walk|trip|visit/.test(value.toLowerCase()) ? 'family'
-        : 'daily life'
-      items.push({ label: value, group })
-    }
-  }
-  return items
-}
-
 const GENERIC_ITEMS: Array<{ label: string; group: string }> = [
   { label: 'watering can', group: 'gardening' },
   { label: 'marigold', group: 'gardening' },
@@ -138,8 +123,8 @@ const GENERIC_ITEMS: Array<{ label: string; group: string }> = [
   { label: 'cake', group: 'kitchen' },
   { label: 'song', group: 'music' },
   { label: 'dance', group: 'music' },
-  { label: 'Anita', group: 'family' },
-  { label: 'Rahul', group: 'family' },
+  { label: 'basket', group: 'daily life' },
+  { label: 'chair', group: 'daily life' },
 ]
 
 function shuffle<T>(items: T[], seed: number): T[] {
@@ -151,9 +136,14 @@ function shuffle<T>(items: T[], seed: number): T[] {
   return copy
 }
 
-export function buildCategoryAssociationPrompt(level: number, memories: MemoryItem[], seed = Date.now()): CategoryAssociationPrompt {
-  const personalItems = itemBuckets(memories)
-  const source: Array<{ label: string; group: string }> = personalItems.length ? personalItems : GENERIC_ITEMS
+export function buildCategoryAssociationPrompt(level: number, memories: MemoryItem[], seed = Date.now(), preferences?: Partial<PersonalPreferences>): CategoryAssociationPrompt {
+  const tokens = getPersonalizedGameTokens(memories, preferences)
+  const personalItems = tokens.map((token) => ({
+    label: token.label,
+    group: token.interestGroup ?? tokenGroup(token.label),
+    source: token.source,
+  })).filter((item) => item.group !== 'everyday' && item.group !== 'shape')
+  const source = personalItems.length ? personalItems : GENERIC_ITEMS.map((item) => ({ ...item, source: 'generic' as const }))
   const groups = new Map<string, string[]>()
   for (const item of source) {
     const current = groups.get(item.group) ?? []
@@ -161,8 +151,10 @@ export function buildCategoryAssociationPrompt(level: number, memories: MemoryIt
     groups.set(item.group, current)
   }
   const groupEntries = Array.from(groups.entries())
-  // Pick the answer group, preferring the one with the most items (more ways to vary it round to round).
-  const ranked = [...groupEntries].sort((a, b) => b[1].length - a[1].length)
+  const sourceRank = (groupName: string) => Math.min(...personalItems
+    .filter((item) => item.group === groupName)
+    .map((item) => item.source === 'memory' ? 0 : item.source === 'preference' ? 1 : 2))
+  const ranked = [...groupEntries].sort((a, b) => sourceRank(a[0]) - sourceRank(b[0]) || b[1].length - a[1].length)
   const groupIndex = groupEntries.length > 1 ? seededInt(seed, ranked.length) : 0
   const selectedGroup = ranked[groupIndex] ?? ranked[0] ?? ['gardening', ['watering can']] as [string, string[]]
   const [groupName, groupItems] = selectedGroup
@@ -193,7 +185,9 @@ export function buildCategoryAssociationPrompt(level: number, memories: MemoryIt
     instruction: `Choose the item that best fits the group: ${groupName}`,
     choices,
     answerId: answerChoice.id,
-    source: personalItems.length ? 'memory' : 'generic',
+    source: personalItems.some((item) => item.source === 'memory') ? 'memory'
+      : personalItems.some((item) => item.source === 'preference') ? 'preference'
+        : personalItems.length ? 'catalog' : 'generic',
   }
 }
 
@@ -234,6 +228,13 @@ function useSessionGame(activityId: ActivityId, onLevelChange?: (change: { previ
     recordActivityEvent(session, gameEvent, logEvent)
   }
 
+  function recordInteraction(at = Date.now()) {
+    const detection = adaptive.recordInteraction({ interactive: true, at })
+    if (detection?.frustrationLike) {
+      record({ type: 'rapid_taps', at, sessionId: session.sessionId, activityId, count: detection.count })
+    }
+  }
+
   function begin() {
     startedRef.current = true
     promptStartedAt.current = Date.now()
@@ -258,7 +259,18 @@ function useSessionGame(activityId: ActivityId, onLevelChange?: (change: { previ
     else adaptive.recordFailure(responseLatencyMs, at)
   }
 
-  return { session, adaptive, startedRef, promptStartedAt, begin, record, submitResponse } as const
+  return { session, adaptive, startedRef, promptStartedAt, begin, record, recordInteraction, submitResponse } as const
+}
+
+function AdvancedGameSupport({ activityId, label }: { activityId: ActivityId; label: string }) {
+  const requestAssistantAction = useApp((state) => state.requestAssistantAction)
+  return (
+    <GameplaySupportSuggestion
+      activityId={activityId}
+      actions={['hint']}
+      onChoose={() => requestAssistantAction('clue', `Please offer a gentle hint for the current ${label} round. Keep the current game and its mechanics unchanged.`)}
+    />
+  )
 }
 
 function HowToPlayVisual({ variant }: { variant: 'dual-n-back' | 'trail-making' | 'category-association' }) {
@@ -319,7 +331,7 @@ export function DualNBackGame() {
   const accentColor = useApp((s) => s.preferences.favoriteColors[0])
   const accent = accentColor && accentColor in COLOR_MAP ? COLOR_MAP[accentColor as keyof typeof COLOR_MAP] : '#0B8A70'
   const setGameContext = useScreenContext((state) => state.setGameContext)
-  const { adaptive, begin, session, submitResponse, record, promptStartedAt } = useSessionGame('dual-n-back')
+  const { adaptive, begin, session, submitResponse, record, recordInteraction, promptStartedAt } = useSessionGame('dual-n-back')
   const [started, setStarted] = useState(false)
   // The level used to build this round's tile sequence is snapshotted at game start and held
   // fixed for the whole playthrough. If the adaptive engine changes `adaptive.level` mid-round
@@ -367,7 +379,7 @@ export function DualNBackGame() {
     const at = Date.now()
     const latencyMs = Math.max(0, at - promptStartedAt.current)
     submitResponse(`dual-n-back-${index}`, value, correct, latencyMs)
-    record({ type: 'rapid_taps', at, sessionId: session.sessionId, activityId: 'dual-n-back', count: 1 })
+    recordInteraction(at)
     if (!correct) useScreenContext.getState().setLastFailedAction('missed the dual n-back match')
     else useScreenContext.getState().setLastFailedAction(null)
     setStatus(correct ? 'correct' : 'incorrect')
@@ -412,6 +424,7 @@ export function DualNBackGame() {
       ) : (
         <>
           <FeedbackPopup status={status} message={feedback} onRetry={retry} onContinue={advance} />
+          <AdvancedGameSupport activityId="dual-n-back" label="Dual N-Back" />
           <div className="mt-4 grid gap-2" style={{ gridTemplateColumns: `repeat(${round.gridSize}, minmax(0, 1fr))` }} aria-label="Dual N-Back board">
             {boardCells.map((cell) => {
               const active = cell === round.currentPosition
@@ -436,7 +449,7 @@ export function TrailMakingGame() {
   const accentColor = useApp((s) => s.preferences.favoriteColors[0])
   const accent = accentColor && accentColor in COLOR_MAP ? COLOR_MAP[accentColor as keyof typeof COLOR_MAP] : '#0B8A70'
   const setGameContext = useScreenContext((state) => state.setGameContext)
-  const { adaptive, begin, session, submitResponse, record } = useSessionGame('trail-making')
+  const { adaptive, begin, session, submitResponse, record, recordInteraction } = useSessionGame('trail-making')
   const [started, setStarted] = useState(false)
   const [round, setRound] = useState<TrailMakingRound>(() => buildTrailMakingRound(adaptive.level))
   const [index, setIndex] = useState(0)
@@ -480,6 +493,7 @@ export function TrailMakingGame() {
     const at = Date.now()
     const latencyMs = Math.max(0, at - promptStartedAt.current)
     submitResponse(`trail-${index}`, label, correct, latencyMs)
+    recordInteraction(at)
     if (correct) {
       setSelected((value) => [...value, label])
       setWrongLabel(null)
@@ -490,7 +504,6 @@ export function TrailMakingGame() {
     setWrongLabel(label)
     setStatus('incorrect')
     setFeedback('Not quite.')
-    record({ type: 'rapid_taps', at, sessionId: session.sessionId, activityId: 'trail-making', count: 1 })
   }
 
   function advance() {
@@ -532,6 +545,7 @@ export function TrailMakingGame() {
       ) : (
         <>
           <FeedbackPopup status={status} message={feedback} onRetry={retry} onContinue={advance} />
+          <AdvancedGameSupport activityId="trail-making" label="Trail Making" />
           <p className="mt-2 text-ink/75">Follow the route in order: 1 → A → 2 → B → ...</p>
           <div className="relative mt-4 min-h-[260px] rounded-2xl border-2" style={{ borderColor: accent, background: `${accent}12` }}>
             {round.nodes.map((node) => {
@@ -556,12 +570,13 @@ const CATEGORY_ROUND_COUNT = 8
 
 export function CategoryAssociationGame() {
   const { memories } = useApp()
+  const preferences = useApp((s) => s.preferences)
   const accentColor = useApp((s) => s.preferences.favoriteColors[0])
   const accent = accentColor && accentColor in COLOR_MAP ? COLOR_MAP[accentColor as keyof typeof COLOR_MAP] : '#0B8A70'
   const setGameContext = useScreenContext((state) => state.setGameContext)
-  const { adaptive, begin, submitResponse } = useSessionGame('category-association')
+  const { adaptive, begin, submitResponse, recordInteraction } = useSessionGame('category-association')
   const [started, setStarted] = useState(false)
-  const [prompt, setPrompt] = useState<CategoryAssociationPrompt>(() => buildCategoryAssociationPrompt(adaptive.level, memories))
+  const [prompt, setPrompt] = useState<CategoryAssociationPrompt>(() => buildCategoryAssociationPrompt(adaptive.level, memories, Date.now(), preferences))
   const [feedback, setFeedback] = useState('')
   const [status, setStatus] = useState<FeedbackStatus>(null)
   const [wrongChoiceId, setWrongChoiceId] = useState<string | null>(null)
@@ -586,7 +601,7 @@ export function CategoryAssociationGame() {
   function handleStart() {
     begin()
     setStarted(true)
-    setPrompt(buildCategoryAssociationPrompt(adaptive.level, memories))
+    setPrompt(buildCategoryAssociationPrompt(adaptive.level, memories, Date.now(), preferences))
     setFeedback('')
     setStatus(null)
     setWrongChoiceId(null)
@@ -601,6 +616,7 @@ export function CategoryAssociationGame() {
     if (!correct) useScreenContext.getState().setLastFailedAction('selected the wrong category')
     else useScreenContext.getState().setLastFailedAction(null)
     submitResponse(`category-${key}`, choiceId, correct)
+    recordInteraction()
     if (correct) {
       setStatus('correct')
       setWrongChoiceId(null)
@@ -622,7 +638,7 @@ export function CategoryAssociationGame() {
       return
     }
     setRound((value) => value + 1)
-    setPrompt(buildCategoryAssociationPrompt(adaptive.level, memories))
+    setPrompt(buildCategoryAssociationPrompt(adaptive.level, memories, Date.now(), preferences))
     setKey((value) => value + 1)
   }
 
@@ -652,6 +668,7 @@ export function CategoryAssociationGame() {
         </div>
       ) : (
         <>
+          <AdvancedGameSupport activityId="category-association" label="Category Association" />
           <FeedbackPopup status={status} message={feedback} onRetry={retry} onContinue={advance} />
           <p className="mt-2 text-sm text-ink/60">Round {round} of {CATEGORY_ROUND_COUNT}</p>
           <div className="mt-2 rounded-2xl border-2 p-4" style={{ borderColor: accent, background: `${accent}14` }}>

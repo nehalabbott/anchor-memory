@@ -24,6 +24,30 @@ describe('persisted app state migration', () => {
     })
   })
 
+  it('migrates the existing anchor-v1 preference fields without losing new interests', async () => {
+    const migrated = await migratePersistedAppState({
+      preferences: {
+        theme: 'warm-vintage',
+        favoriteColors: ['Blue'],
+        favoriteFlower: 'Jasmine',
+        favoriteActivities: ['cricket'],
+        favoriteFoods: ['Mango'],
+        favoritePlaces: ['Lalbagh'],
+        lifeActivityTags: ['gardening'],
+      },
+    })
+
+    expect(migrated.preferences).toMatchObject({
+      theme: 'warm-vintage',
+      favoriteColors: ['Blue'],
+      favoriteFlower: 'Jasmine',
+      favoriteActivities: ['cricket'],
+      favoriteFoods: ['Mango'],
+      favoritePlaces: ['Lalbagh'],
+      lifeActivityTags: ['gardening'],
+    })
+  })
+
   it('moves legacy remote media URLs into opaque references', async () => {
     const migrated = await migratePersistedAppState({
       userName: 'Margaret',
@@ -90,6 +114,7 @@ describe('Privacy Shield persistence and transient voice state', () => {
     expect(persisted.state).not.toHaveProperty('lastTranscript')
     expect(persisted.state).not.toHaveProperty('speechActivity')
     expect(persisted.state).not.toHaveProperty('voiceListeningEnabled')
+    expect(persisted.state).not.toHaveProperty('gardenAudioEnabled')
     expect(persisted.state).not.toHaveProperty('audio')
 
     localStorage.setItem('anchor-v1', JSON.stringify({ state: { privacyShieldEnabled: false }, version: 3 }))

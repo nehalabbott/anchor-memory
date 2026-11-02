@@ -1,6 +1,6 @@
 import { useEffect, useState, type ReactNode } from 'react'
 import { HeartHandshake, LockKeyhole } from 'lucide-react'
-import { getSession, login, logout, register } from '@/lib/apiClient'
+import { BackendApiError, getSession, login, logout, register } from '@/lib/apiClient'
 import { useApp } from '@/store/useApp'
 import type { SupportedPerson } from '@/lib/types'
 import { DEFAULT_PERSONAL_PREFERENCES } from '@/lib/personalization'
@@ -23,6 +23,8 @@ function activateAuthenticatedPatient(patient: SupportedPerson) {
 export default function AuthGate({ children }: { children: ReactNode }) {
   const [checking, setChecking] = useState(true)
   const [authenticated, setAuthenticated] = useState(false)
+  const [offline, setOffline] = useState(false)
+  const [localOnly, setLocalOnly] = useState(false)
   const [mode, setMode] = useState<'login' | 'register'>('login')
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
@@ -38,8 +40,10 @@ export default function AuthGate({ children }: { children: ReactNode }) {
         setAuthenticated(true)
       }
       setChecking(false)
-    }).catch(() => {
-      if (active) setChecking(false)
+    }).catch((error: unknown) => {
+      if (!active) return
+      setOffline(error instanceof BackendApiError && error.status === 0)
+      setChecking(false)
     })
     return () => { active = false }
   }, [])
@@ -73,12 +77,21 @@ export default function AuthGate({ children }: { children: ReactNode }) {
     return <main className="min-h-screen grid place-items-center bg-mist px-6 text-center"><div><HeartHandshake className="mx-auto text-garden-700" size={42} /><p className="mt-4 font-display text-xl font-bold">Opening your private space…</p></div></main>
   }
 
-  if (authenticated) return <>{children}</>
+  if (authenticated || localOnly) return <>{children}</>
 
   return (
     <main className="min-h-screen bg-mist px-5 py-8">
       <div className="mx-auto max-w-md rounded-[28px] bg-white p-6 shadow-soft">
         <div className="flex items-center gap-3"><span className="grid h-12 w-12 place-items-center rounded-full bg-garden-100 text-garden-700"><HeartHandshake size={26} /></span><div><p className="font-display text-2xl font-bold">Anchor</p><p className="text-sm text-ink/70">A private space for your memories</p></div></div>
+        {offline && (
+          <div className="mt-6 rounded-xl border-2 border-sun-main bg-sun-soft p-4 text-sun-deep" role="status">
+            <p className="font-semibold">The Anchor server is unavailable.</p>
+            <p className="mt-1 text-sm">You can continue with data saved on this device. Signing in, syncing, and Mo need a server connection.</p>
+            <button type="button" onClick={() => setLocalOnly(true)} className="mt-3 min-h-[48px] w-full rounded-xl border-2 border-garden-700 bg-white px-4 font-semibold text-garden-900">
+              Continue with on-device data
+            </button>
+          </div>
+        )}
         <h1 className="mt-7 text-2xl font-bold">{mode === 'login' ? 'Welcome back' : 'Create your private space'}</h1>
         <p className="mt-2 text-sm leading-relaxed text-ink/70">Your account and memories stay on this Anchor server. Session cookies are HttpOnly and expire automatically.</p>
         <form className="mt-6 space-y-4" onSubmit={submit}>

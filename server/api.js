@@ -350,7 +350,7 @@ async function handleAssessments(request, response, repositories, personId, url)
   throw new ApiError(405, 'Method not allowed.', 'method_not_allowed')
 }
 
-async function handleAuth(request, response, repositories) {
+async function handleAuth(request, response, repositories, cookieSecure = false) {
   if (request.method === 'GET' && request.url.endsWith('/session')) {
     const context = await requireAuthenticatedContext(repositories, request)
     return send(response, 200, { user: safeUser(context.user), patient: context.patient })
@@ -358,7 +358,7 @@ async function handleAuth(request, response, repositories) {
   if (request.method === 'POST' && request.url.endsWith('/logout')) {
     const token = sessionTokenFromCookie(request.headers.cookie)
     if (token) await repositories.auth.deleteSession(token)
-    response.setHeader('Set-Cookie', makeSessionClearedCookie())
+    response.setHeader('Set-Cookie', makeSessionClearedCookie(cookieSecure))
     return send(response, 200, { loggedOut: true })
   }
   if (request.method !== 'POST') throw new ApiError(405, 'Method not allowed.', 'method_not_allowed')
@@ -378,24 +378,37 @@ async function handleAuth(request, response, repositories) {
     const patient = await repositories.auth.getPatientByUser(user.id)
     if (!patient) throw new ApiError(404, 'Patient profile was not found.', 'patient_not_found')
     const session = await repositories.auth.createSession(user.id, patient.id)
-    response.setHeader('Set-Cookie', makeSessionCookie(session.token, session.expiresAt))
+    response.setHeader('Set-Cookie', makeSessionCookie(session.token, session.expiresAt, cookieSecure))
     return send(response, 200, { user: safeUser(user), patient })
   }
   throw new ApiError(404, 'Endpoint was not found.', 'not_found')
 }
 
-export function createApiHandler({ repositories, assistantHandler, groqConfigured = false, schemaVersion = 0, authEnabled = true }) {
+export function createApiHandler({ repositories, assistantHandler, groqConfigured = false, schemaVersion = 0, authEnabled = true, allowedOrigins = [], cookieSecure = false }) {
   return async function handle(request, response) {
     const url = new URL(request.url, 'http://127.0.0.1')
     const path = url.pathname
     try {
+      const origin = request.headers.origin
+      if (origin) {
+        if (!allowedOrigins.includes(origin)) throw new ApiError(403, 'This application origin is not allowed.', 'origin_not_allowed')
+        response.setHeader('Access-Control-Allow-Origin', origin)
+        response.setHeader('Access-Control-Allow-Credentials', 'true')
+        response.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, PATCH, DELETE, OPTIONS')
+        response.setHeader('Access-Control-Allow-Headers', 'Content-Type')
+        response.setHeader('Vary', 'Origin')
+        if (request.method === 'OPTIONS') {
+          response.statusCode = 204
+          return response.end()
+        }
+      }
       if (path === '/api/health') {
         if (request.method !== 'GET') throw new ApiError(405, 'Method not allowed.', 'method_not_allowed')
         return send(response, 200, { ok: true, groqConfigured, databaseReady: true, schemaVersion })
       }
       if (path.startsWith('/api/auth/')) {
         if (!authEnabled || schemaVersion < 5) throw new ApiError(404, 'Authentication is not available in this database schema.', 'auth_unavailable')
-        return await handleAuth(request, response, repositories)
+        return await handleAuth(request, response, repositories, cookieSecure)
       }
       if (authEnabled && schemaVersion < 5) {
         throw new ApiError(503, 'Authentication storage is not ready. Please retry after database migration.', 'auth_unavailable')

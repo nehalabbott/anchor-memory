@@ -1,23 +1,59 @@
 import { useEffect, useRef } from 'react'
-import { useLocation } from 'react-router-dom'
 import { useApp } from '@/store/useApp'
-import { brain } from './brain'
+import type { InteractionEvent, Part2InteractionEvent } from '@/lib/types'
 import { awarenessCooldownElapsed, detectAwareness } from './distressDetector'
 import { speechRecognitionSupported } from './speech'
 import { startVoiceAwareness, stopVoiceAwareness, type LocalAudioSignals } from './voiceAwareness'
-import { screenLabel } from '@/lib/routes'
 
 const RECENT_SIGNAL_MS = 8_000
 const QUIET_SIGNALS: LocalAudioSignals = { amplitude: 0, speechActivity: false, volumeSpike: false, frequencyVariation: 0 }
+type ScopedGameplayEvent =
+  | Extract<Part2InteractionEvent, { type: 'response_submitted' }>
+  | Extract<Part2InteractionEvent, { type: 'rapid_taps' }>
+
+function isScopedGameplayEvent(event: InteractionEvent): event is ScopedGameplayEvent {
+  return (event.type === 'response_submitted' || event.type === 'rapid_taps') &&
+    'activityId' in event && 'sessionId' in event
+}
 
 export default function VoiceAwarenessController() {
-  const location = useLocation()
   const privacyShieldEnabled = useApp((state) => state.privacyShieldEnabled)
   const voiceListeningEnabled = useApp((state) => state.voiceListeningEnabled)
   const assistantOpen = useApp((state) => state.assistantOpen)
   const lastPromptAt = useRef(0)
-  const routeRef = useRef(location.pathname)
-  routeRef.current = location.pathname
+  const lastGameplayPromptAt = useRef(0)
+
+  useEffect(() => {
+    return useApp.subscribe((state, previous) => {
+      const event = state.events[state.events.length - 1]
+      if (!event || event === previous.events[previous.events.length - 1]) return
+      if (event.type === 'activity_started') {
+        state.setGameplaySupportActivity(null)
+        return
+      }
+      if (!isScopedGameplayEvent(event)) return
+
+      const relatedEvents = state.events.filter((candidate) =>
+        isScopedGameplayEvent(candidate) &&
+        candidate.activityId === event.activityId && candidate.sessionId === event.sessionId,
+      )
+      const now = Date.now()
+      const detection = detectAwareness({
+        transcript: '',
+        events: relatedEvents,
+        now,
+        speechActivity: false,
+        volumeSpike: false,
+        fastSpeaking: false,
+        frequencyVariation: 0,
+      })
+      if (detection.state !== 'possible_frustration' ||
+        !awarenessCooldownElapsed(lastGameplayPromptAt.current, now)) return
+
+      lastGameplayPromptAt.current = now
+      state.setGameplaySupportActivity(event.activityId)
+    })
+  }, [])
 
   useEffect(() => {
     const supported = speechRecognitionSupported()
@@ -50,24 +86,8 @@ export default function VoiceAwarenessController() {
       if (useApp.getState().assistantOpen || useApp.getState().privacyShieldEnabled) return
 
       lastPromptAt.current = now
-      const state = useApp.getState()
-      const situation = `The user may benefit from a gentle check-in. Local interaction signals suggest ${detection.state.replace(/_/g, ' ')} (${detection.reasons.join('; ')}). Offer one short, reassuring sentence or an optional pause. Do not mention monitoring, detection, emotions as facts, or diagnosis.`
-      void brain.reply(situation, {
-        route: routeRef.current,
-        screenLabel: screenLabel(routeRef.current),
-        userName: state.userName,
-        state: state.interactionState,
-        personalDetails: state.supportedPerson.personalDetails,
-      }, state.memories, state.chat.map(({ role, text }) => ({ role, text }))).then((reply) => {
-        const current = useApp.getState()
-        if (current.privacyShieldEnabled || current.assistantOpen) return
-        useApp.getState().openAssistantWithMessage(reply)
-      }).catch(() => {
-        const current = useApp.getState()
-        if (!current.privacyShieldEnabled && !current.assistantOpen) {
-          useApp.getState().openAssistantWithMessage('It is okay. We can take this slowly, or pause for a moment.')
-        }
-      })
+      const latestGameResponse = [...useApp.getState().events].reverse().find(isScopedGameplayEvent)
+      if (latestGameResponse) useApp.getState().setGameplaySupportActivity(latestGameResponse.activityId)
     }
 
     let stop: () => void = () => {}

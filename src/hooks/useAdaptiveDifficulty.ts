@@ -1,11 +1,10 @@
 import { useRef, useState } from 'react'
-import { useApp } from '@/store/useApp'
 import {
   createInitialAdaptiveState, recordAdaptiveResponse, recordAdaptiveTap, requestAdaptiveSupport,
 } from '@/lib/adaptiveDifficulty/engine'
 import { difficultyConfigFor } from '@/lib/adaptiveDifficulty/config'
 import type {
-  AdaptiveAcousticState, AdaptiveDifficultyState, AdaptiveTap, DifficultyChange, DifficultyLevel,
+  AdaptiveDifficultyState, AdaptiveTap, DifficultyChange, DifficultyLevel,
 } from '@/lib/adaptiveDifficulty/types'
 
 interface UseAdaptiveDifficultyOptions {
@@ -13,23 +12,11 @@ interface UseAdaptiveDifficultyOptions {
   onLevelChange?: (change: DifficultyChange) => void
 }
 
-function currentAcousticState(interactionState: ReturnType<typeof useApp.getState>['interactionState'], privateMode: boolean, listening: boolean): AdaptiveAcousticState | undefined {
-  if (privateMode || !listening) return undefined
-  if (interactionState === 'high_frustration') return 'high_frustration'
-  if (interactionState === 'possible_frustration') return 'possible_frustration'
-  if (interactionState === 'confusion' || interactionState === 'needs_help') return 'possible_confusion'
-  return undefined
-}
-
 export function useAdaptiveDifficulty(options: UseAdaptiveDifficultyOptions = {}) {
-  const privacyShieldEnabled = useApp((state) => state.privacyShieldEnabled)
-  const voiceListening = useApp((state) => state.voiceListening)
-  const interactionState = useApp((state) => state.interactionState)
   const onLevelChangeRef = useRef(options.onLevelChange)
   onLevelChangeRef.current = options.onLevelChange
   const stateRef = useRef<AdaptiveDifficultyState>(createInitialAdaptiveState(options.initialLevel ?? 3))
   const [state, setState] = useState(stateRef.current)
-  const acousticState = currentAcousticState(interactionState, privacyShieldEnabled, voiceListening)
 
   function apply(next: AdaptiveDifficultyState, change?: DifficultyChange) {
     stateRef.current = next
@@ -38,7 +25,7 @@ export function useAdaptiveDifficulty(options: UseAdaptiveDifficultyOptions = {}
   }
 
   function recordResponse(correct: boolean, latencyMs: number, at = Date.now()) {
-    const result = recordAdaptiveResponse(stateRef.current, { correct, latencyMs: Math.max(0, latencyMs), at }, acousticState)
+    const result = recordAdaptiveResponse(stateRef.current, { correct, latencyMs: Math.max(0, latencyMs), at })
     apply(result.state, result.change)
     return result.change
   }
@@ -52,7 +39,7 @@ export function useAdaptiveDifficulty(options: UseAdaptiveDifficultyOptions = {}
   }
 
   function recordInteraction(tap: Omit<AdaptiveTap, 'at'> & { at?: number }) {
-    const result = recordAdaptiveTap(stateRef.current, { ...tap, at: tap.at ?? Date.now() }, acousticState)
+    const result = recordAdaptiveTap(stateRef.current, { ...tap, at: tap.at ?? Date.now() })
     apply(result.state, result.change)
     return result.rapidTap
   }

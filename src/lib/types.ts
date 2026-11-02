@@ -12,7 +12,7 @@ export interface SupportedPerson {
   updatedAt: number
 }
 
-export type PersonalTheme = 'high-contrast' | 'calming-pastels' | 'warm-vintage'
+export type PersonalTheme = 'high-contrast' | 'calming-pastels' | 'warm-vintage' | 'dark'
 
 export interface PersonalPreferences {
   theme: PersonalTheme

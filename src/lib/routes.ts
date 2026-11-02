@@ -5,7 +5,7 @@
 export const NAV = [
   { path: '/memories', label: 'Memories', icon: 'home' },
   { path: '/games', label: 'Games', icon: 'brain' },
-  { path: '/garden', label: 'Memory Aquarium', icon: 'flower' },
+  { path: '/garden', label: 'Memory Aquarium', icon: 'fish' },
   { path: '/profile', label: 'My Journey', icon: 'user' },
 ] as const
 

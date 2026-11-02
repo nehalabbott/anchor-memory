@@ -31,7 +31,7 @@ export function detectRapidTapBurst(taps: AdaptiveTap[], now: number, recentFail
   const burst = recentTaps.length >= 3
   return {
     burst,
-    frustrationLike: burst && (nonInteractiveCount >= 2 || failedTargets >= 2),
+    frustrationLike: burst && (nonInteractiveCount >= 2 || failedTargets >= 1),
     count: recentTaps.length,
     nonInteractiveCount,
   }

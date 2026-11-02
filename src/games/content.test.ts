@@ -2,6 +2,8 @@ import { describe, expect, it } from 'vitest'
 import { gardenStateFor } from './gardenState'
 import { buildCategoryRounds, buildFacePrompts, buildPatternRounds, buildSequenceRounds } from './content'
 import { DEMO_MEMORIES, demoMemoriesFor } from '@/demo/demoData'
+import { DEFAULT_PERSONAL_PREFERENCES, normalizePersonalPreferences } from '@/lib/personalization'
+import { buildCategoryAssociationPrompt } from '@/games/cognitive/AdvancedGames'
 
 describe('distinct personalized cognitive activities', () => {
   it('includes a complete fictional Indian demo with people, places, and stories', () => {
@@ -82,6 +84,63 @@ describe('distinct personalized cognitive activities', () => {
     expect(buildCategoryRounds(sparse)).toHaveLength(3)
     expect(buildPatternRounds(DEMO_MEMORIES)[0].pattern[0].label).not.toBe(buildPatternRounds([])[0].pattern[0].label)
     expect(buildSequenceRounds(DEMO_MEMORIES)[0].items.map((token) => token.label)).not.toEqual(buildSequenceRounds([])[0].items.map((token) => token.label))
+  })
+
+  it('uses editable interests to change real game pools without inventing personal memories', () => {
+    const gardening = { ...DEFAULT_PERSONAL_PREFERENCES, lifeActivityTags: ['Gardening'] }
+    const cricket = { ...DEFAULT_PERSONAL_PREFERENCES, lifeActivityTags: ['Cricket'] }
+    const gardenPattern = buildPatternRounds([], gardening)
+    const cricketPattern = buildPatternRounds([], cricket)
+    const gardenSequence = buildSequenceRounds([], 4, gardening)[0]
+    const cricketSequence = buildSequenceRounds([], 4, cricket)[0]
+
+    expect(gardenPattern[0].pattern.map((token) => token.label)).toEqual(expect.arrayContaining(['Flower', 'Plant']))
+    expect(cricketPattern[0].pattern.map((token) => token.label)).toEqual(expect.arrayContaining(['Cricket bat', 'Cricket ball']))
+    expect(gardenSequence.items.map((token) => token.label)).not.toEqual(cricketSequence.items.map((token) => token.label))
+    expect(cricketPattern[0].sourceMemoryIds).toEqual([])
+  })
+
+  it('keeps personalized rounds valid and coherent, and leaves faces caregiver-supplied', () => {
+    const preferences = { ...DEFAULT_PERSONAL_PREFERENCES, lifeActivityTags: ['cricket'] }
+    for (const round of buildPatternRounds([], preferences)) {
+      expect(round.choices.map((token) => token.id)).toContain(round.answer.id)
+      expect(new Set(round.choices.map((token) => token.id)).size).toBe(round.choices.length)
+    }
+    for (const round of buildSequenceRounds([], 4, preferences)) {
+      expect(round.items.every((token) => round.choices.some((choice) => choice.id === token.id))).toBe(true)
+      expect(new Set(round.items.map((token) => token.id)).size).toBe(round.items.length)
+    }
+    const oddRound = buildCategoryRounds([], preferences).find((round) => round.id === 'category-personal-cricket')
+    expect(oddRound).toBeDefined()
+    expect(oddRound?.items.filter((token) => token.interestGroup === 'cricket')).toHaveLength(3)
+    expect(oddRound?.items.find((token) => token.id === oddRound.answerId)?.interestGroup).not.toBe('cricket')
+    const association = buildCategoryAssociationPrompt(1, [], 42, preferences)
+    const correctChoice = association.choices.find((choice) => choice.id === association.answerId)
+    expect(association.category).toBe('cricket')
+    expect(correctChoice?.group).toBe(association.category)
+    expect(buildFacePrompts([])).toEqual([])
+    expect(buildFacePrompts(DEMO_MEMORIES).map((prompt) => prompt.memory.id)).toEqual(
+      DEMO_MEMORIES.filter((memory) => memory.kind === 'person' || memory.relationship).map((memory) => memory.id),
+    )
+  })
+
+  it('uses safe generic game content for missing preferences and preserves favorite colour normalization', () => {
+    expect(buildPatternRounds([])[0].title).toBe('Shape pattern')
+    expect(buildSequenceRounds([])[0].items.length).toBeGreaterThanOrEqual(3)
+    expect(buildCategoryRounds([])).toHaveLength(3)
+    expect(normalizePersonalPreferences({ favoriteColors: ['Blue'], favoriteFlower: 'Jasmine' })).toMatchObject({
+      favoriteColors: ['Blue'], favoriteFlower: 'Jasmine', lifeActivityTags: [],
+    })
+  })
+
+  it('keeps new unlisted interests editable and uses a labeled fallback instead of claiming a memory', () => {
+    const preferences = { ...DEFAULT_PERSONAL_PREFERENCES, lifeActivityTags: ['birdwatching'] }
+    const sequence = buildSequenceRounds([], 4, preferences)[0]
+    const prompt = buildCategoryAssociationPrompt(1, [], 24, preferences)
+    expect(sequence.items.some((token) => token.label === 'birdwatching' && token.source === 'preference')).toBe(true)
+    expect(prompt.source).toBe('preference')
+    expect(prompt.choices.find((choice) => choice.id === prompt.answerId)?.label).toBe('birdwatching')
+    expect(buildPatternRounds([], preferences)[0].sourceMemoryIds).toEqual([])
   })
 })
 

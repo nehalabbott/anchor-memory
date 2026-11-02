@@ -33,10 +33,12 @@ export function createPreferencesRepository(database) {
     },
 
     async update(personId, preferences) {
+      const current = fromRow(await database.get('SELECT * FROM personal_preferences WHERE person_id = ?', personId)) ?? {}
+      const merged = { ...current, ...preferences }
       const columns = [...Object.values(ARRAY_FIELDS), ...Object.values(TEXT_FIELDS)]
       const values = [
-        ...Object.keys(ARRAY_FIELDS).map((field) => preferences[field] === undefined ? null : JSON.stringify(preferences[field])),
-        ...Object.keys(TEXT_FIELDS).map((field) => preferences[field] ?? null),
+        ...Object.keys(ARRAY_FIELDS).map((field) => merged[field] === undefined ? null : JSON.stringify(merged[field])),
+        ...Object.keys(TEXT_FIELDS).map((field) => merged[field] ?? null),
       ]
       const now = Date.now()
       await database.run(`

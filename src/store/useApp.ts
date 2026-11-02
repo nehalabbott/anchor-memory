@@ -2,13 +2,13 @@ import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
 import { stopAllSpeechListeners } from '@/assistant/speech'
 import { stopVoiceAwareness } from '@/assistant/voiceAwareness'
-import type { ChatMessage, InteractionEvent, InteractionState, MediaReference, MemoryItem, MemoryKind, PersonalPreferences, SessionExperience, SupportedPerson } from '@/lib/types'
+import type { ActivityId, ChatMessage, InteractionEvent, InteractionState, MediaReference, MemoryItem, MemoryKind, PersonalPreferences, SessionExperience, SupportedPerson } from '@/lib/types'
 import { mediaRepository } from '@/lib/mediaRepository'
 import { DEFAULT_PERSONAL_PREFERENCES, normalizePersonalPreferences } from '@/lib/personalization'
 
 type AssistantAction = 'clue' | 'easier' | 'break'
 export type DataSyncStatus = 'unknown' | 'checking' | 'synced' | 'offline' | 'syncing' | 'error'
-type PersistedAppState = Pick<AppState, 'userName' | 'supportedPerson' | 'memories' | 'chat' | 'speechEnabled' | 'largeText' | 'lastSessionExperience' | 'privacyShieldEnabled' | 'localDataImported' | 'pendingPersonSync' | 'pendingMemoryIds'>
+type PersistedAppState = Pick<AppState, 'userName' | 'supportedPerson' | 'memories' | 'chat' | 'speechEnabled' | 'largeText' | 'preferences' | 'lastSessionExperience' | 'privacyShieldEnabled' | 'localDataImported' | 'pendingPersonSync' | 'pendingMemoryIds'>
 type NewMemoryItem = Omit<MemoryItem, 'id' | 'createdAt' | 'kind'> & { kind?: MemoryKind }
 
 export const hadPersistedAppStateOnStartup = (() => {
@@ -29,6 +29,7 @@ interface AppState {
   assistantNudging: boolean
   events: InteractionEvent[]          // Part 3 reads this
   interactionState: InteractionState  // Part 3 writes this
+  gameplaySupportActivity: ActivityId | null
   speechEnabled: boolean              // read replies aloud
   largeText: boolean
   preferences: PersonalPreferences
@@ -66,6 +67,7 @@ interface AppState {
   clearChat: () => void
   logEvent: (e: InteractionEvent) => void
   setInteractionState: (s: InteractionState) => void
+  setGameplaySupportActivity: (activityId: ActivityId | null) => void
   setSpeechEnabled: (v: boolean) => void
   setLargeText: (v: boolean) => void
   setPreferences: (prefs: Partial<PersonalPreferences>) => void
@@ -169,7 +171,7 @@ export async function migratePersistedAppState(value: unknown): Promise<Persiste
 
 export const useApp = create<AppState>()(
   persist(
-    (set) => ({
+    (set, get) => ({
       userName: 'Margaret',
       supportedPerson: { id: 'supported-person-1', name: 'Margaret', personalDetails: [], createdAt: Date.now(), updatedAt: Date.now() },
       caregiverMode: false,
@@ -186,6 +188,7 @@ export const useApp = create<AppState>()(
       assistantSpeakFirst: null,
       events: [],
       interactionState: 'normal',
+      gameplaySupportActivity: null,
       speechEnabled: true,
       largeText: false,
       preferences: DEFAULT_PERSONAL_PREFERENCES,
@@ -226,6 +229,7 @@ export const useApp = create<AppState>()(
       clearChat: () => set({ chat: [] }),
       logEvent: (e) => set((s) => ({ events: [...s.events, e].slice(-200) })),
       setInteractionState: (interactionState) => set({ interactionState }),
+      setGameplaySupportActivity: (gameplaySupportActivity) => set({ gameplaySupportActivity }),
       setSpeechEnabled: (speechEnabled) => set({ speechEnabled }),
       setLargeText: (largeText) => set({ largeText }),
       setPreferences: (update) => set((state) => ({ preferences: normalizePersonalPreferences({ ...state.preferences, ...update }) })),
@@ -237,9 +241,11 @@ export const useApp = create<AppState>()(
           set({ privacyShieldEnabled, voiceListeningEnabled: false, voiceListening: false, lastTranscript: '', speechActivity: false, voiceError: '' })
         } else set({ privacyShieldEnabled })
       },
-      setVoiceListeningEnabled: (voiceListeningEnabled) => set((s) => s.privacyShieldEnabled && voiceListeningEnabled
-        ? {}
-        : { voiceListeningEnabled, voiceListening: false, lastTranscript: '', speechActivity: false, voiceError: '' }),
+      setVoiceListeningEnabled: (voiceListeningEnabled) => {
+        if (get().privacyShieldEnabled && voiceListeningEnabled) return
+        if (!voiceListeningEnabled) stopVoiceAwareness()
+        set({ voiceListeningEnabled, voiceListening: false, lastTranscript: '', speechActivity: false, voiceError: '' })
+      },
       setVoiceSupported: (voiceSupported) => set({ voiceSupported }),
       setVoiceListening: (voiceListening) => set({ voiceListening }),
       setLastTranscript: (lastTranscript) => set({ lastTranscript }),
@@ -287,7 +293,6 @@ export const useApp = create<AppState>()(
         pendingMemoryIds: s.pendingMemoryIds,
         speechEnabled: s.speechEnabled, largeText: s.largeText,
         preferences: normalizePersonalPreferences(s.preferences),
-        gardenAudioEnabled: s.gardenAudioEnabled,
       }),
     },
   ),

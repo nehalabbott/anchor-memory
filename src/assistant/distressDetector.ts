@@ -32,8 +32,10 @@ export function detectAwareness(signals: AwarenessSignals): AwarenessDetection {
   const repeatedTranscript = (phrase: RegExp) =>
     [signals.transcript, ...(signals.recentTranscripts ?? [])].filter((text) => phrase.test(text.toLowerCase())).length
   const recentEvents = signals.events.filter((event) => signals.now - event.at <= WINDOW_MS && signals.now >= event.at)
-  const failedResponses = recentEvents.filter((event) => event.type === 'response_submitted' && event.correct === false).length
-  const rapidInteractions = recentEvents.some((event) => event.type === 'rapid_taps' && event.count >= 4)
+  const responses = recentEvents.filter((event) => event.type === 'response_submitted')
+  const failedResponses = responses.filter((event) => event.correct === false)
+  const slowResponses = responses.filter((event) => (event.responseLatencyMs ?? 0) >= 10_000).length
+  const rapidInteractions = recentEvents.some((event) => event.type === 'rapid_taps' && event.count >= 3)
   const frustrationWords = /\b(frustrated|too hard|give up|can't do this|cannot do this)\b/.test(normalized)
   const confusionWords = /\b(confused|don't understand|do not understand|what do i do|i forgot)\b/.test(normalized)
   const anxietyWords = /\b(anxious|worried|nervous|scared|afraid)\b/.test(normalized)
@@ -41,17 +43,21 @@ export function detectAwareness(signals: AwarenessSignals): AwarenessDetection {
   const repeatedAnxiety = repeatedTranscript(/\b(anxious|worried|nervous|scared|afraid)\b/) >= 2
   const acousticChange = signals.speechActivity && (signals.volumeSpike || signals.fastSpeaking || signals.frequencyVariation >= 0.65)
 
-  if (failedResponses >= 2 && (frustrationWords || rapidInteractions || (signals.volumeSpike && signals.fastSpeaking))) {
+  const repeatedGameStruggle = failedResponses.length >= 3 ||
+    (failedResponses.length >= 2 && (rapidInteractions || slowResponses >= 2)) ||
+    (rapidInteractions && slowResponses >= 2)
+  if (repeatedGameStruggle || (failedResponses.length >= 2 && (frustrationWords || (signals.volumeSpike && signals.fastSpeaking)))) {
     const reasons = ['repeated unsuccessful responses']
     if (frustrationWords) reasons.push('frustration-related words')
     if (rapidInteractions) reasons.push('repeated rapid interactions')
+    if (slowResponses >= 2) reasons.push('repeated long response times')
     if (signals.volumeSpike && signals.fastSpeaking) reasons.push('combined volume and speaking-rate change')
     return { state: 'possible_frustration', confidence: 0.78, reasons }
   }
 
-  if ((confusionWords && (failedResponses >= 1 || rapidInteractions || repeatedConfusion)) || (failedResponses >= 3 && rapidInteractions)) {
+  if ((confusionWords && (failedResponses.length >= 1 || rapidInteractions || repeatedConfusion)) || (failedResponses.length >= 3 && rapidInteractions)) {
     const reasons = ['repeated confusion-related language or activity difficulty']
-    if (failedResponses) reasons.push('unsuccessful responses')
+    if (failedResponses.length) reasons.push('unsuccessful responses')
     if (rapidInteractions) reasons.push('repeated rapid interactions')
     return { state: 'possible_confusion', confidence: 0.72, reasons }
   }

@@ -12,9 +12,10 @@ export default function Garden() {
   const { memories, supportedPerson, lastSessionExperience, gardenAudioEnabled, setGardenAudioEnabled } = useApp()
   const screen = useScreenContext((state) => state)
   const mood = useMemo(() => deriveGardenMood(), [screen.activityState, screen.difficultyLevel, screen.lastFailedAction, screen.activeGame, screen.elapsedTimeMs])
-  const reducedMotion = typeof window !== 'undefined' && window.matchMedia?.('(prefers-reduced-motion: reduce)').matches
-  const audio = useGardenAudio({ mood, enabled: gardenAudioEnabled, reducedMotion })
+  const audio = useGardenAudio({ mood, enabled: gardenAudioEnabled })
   const state = gardenStateFor(lastSessionExperience, memories.length)
+
+  useEffect(() => () => setGardenAudioEnabled(false), [setGardenAudioEnabled])
 
   const storyCards = useMemo(() => {
     const source = memories.length > 0 ? memories : demoMemoriesFor(supportedPerson.name)
@@ -50,18 +51,12 @@ export default function Garden() {
   const moodCopy = {
     calm: {
       tone: 'soft breeze and easy drifting',
-      headline: 'The aquarium is full of gentle motion.',
-      body: 'The fish are moving slowly and comfortably. The pace feels safe, quiet, and easy to settle into.'
     },
     supportive: {
       tone: 'steady hum and reassuring motion',
-      headline: 'The aquarium feels steady and kind.',
-      body: 'The fish are keeping a calm rhythm. You can stay here as long as you like.'
     },
     agitated: {
       tone: 'quick shimmer and bright motion',
-      headline: 'The fish are darting about. A gentle pause might help.',
-      body: 'The motion feels quick today. A slower moment may help the aquarium settle and feel more comfortable.'
     }
   } as const
 
@@ -81,17 +76,30 @@ export default function Garden() {
           type="button"
           aria-label={gardenAudioEnabled ? 'Garden sounds on' : 'Garden sounds off'}
           aria-pressed={gardenAudioEnabled}
-          onClick={() => setGardenAudioEnabled(!gardenAudioEnabled)}
+          onClick={() => {
+            if (gardenAudioEnabled) {
+              audio.stop()
+              setGardenAudioEnabled(false)
+            } else {
+              void audio.start().then((started) => setGardenAudioEnabled(started))
+            }
+          }}
           className="min-h-[48px] rounded-full border-2 border-garden-600 bg-white px-4 font-semibold text-garden-900"
         >
           {gardenAudioEnabled ? 'Sounds on' : 'Sounds off'}
         </button>
       </div>
+      <label className="mb-3 block rounded-xl border border-mint-200 bg-white px-4 py-3">
+        <span className="flex items-center justify-between font-semibold">
+          <span>Water sound volume</span><span>{Math.round(audio.volume * 100)}%</span>
+        </span>
+        <input aria-label="Water sound volume" type="range" min="0" max="1" step="0.05" value={audio.volume} onChange={(event) => audio.setVolume(Number(event.target.value))} className="mt-2 min-h-[44px] w-full accent-garden-700" />
+      </label>
 
       <PondScene className="h-48 mb-4" label={gardenLabel} />
 
       <div className="mb-4 rounded-full border border-garden-500 bg-mint-100 px-4 py-2 text-center text-sm font-medium text-garden-900" aria-live="polite">
-        {audio.audioReady ? `Aquarium mood: ${mood} · ${aquariumTone}` : `Aquarium mood: ${mood} · ${aquariumTone}`}
+        {audio.audioError ? audio.audioError : audio.audioReady ? `Water ambience is playing · Aquarium mood: ${mood}` : `Aquarium mood: ${mood} · ${aquariumTone}`}
       </div>
 
       <section className="mt-4 rounded-card border-2 border-garden-500 bg-mint-100 p-4" aria-live="polite">
@@ -122,10 +130,6 @@ export default function Garden() {
         </div>
       </section>
 
-      <div className="mt-4 rounded-card border-2 border-garden-500 bg-mint-100 p-4" aria-live="polite">
-        <h2 className="text-xl text-garden-900">{moodCopy[mood].headline}</h2>
-        <p className="mt-2 text-ink/80">{moodCopy[mood].body}</p>
-      </div>
     </>
   )
 }

@@ -1,5 +1,6 @@
 node_modules
 dist
+.idea/
 .env
 .env.*
 !.env.example
@@ -7,3 +8,12 @@ dist
 *.tsbuildinfo
 .vite
 .DS_Store
+
+# Local test and validation output
+test.out
+typecheck.out
+validation.log
+assistant-regression.json
+vitest-demo-examples.json
+vitest-garden-fish.json
+vitest-visual-examples.json

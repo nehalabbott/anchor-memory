@@ -16,6 +16,7 @@ import { selectChoicesWithRequired } from '@/lib/adaptiveDifficulty/choices'
 import { AdvancedGamePage } from '@/games/cognitive/AdvancedGames'
 import { useScreenContext } from '@/store/useScreenContext'
 import { FeedbackPopup, HowToPlayCard, choiceStateClass, type FeedbackStatus } from '@/games/GameFeedback'
+import GameplaySupportSuggestion, { type GameplaySupportAction } from '@/components/GameplaySupportSuggestion'
 
 const ROUTE_ACTIVITY = {
   faces: 'faces',
@@ -172,7 +173,7 @@ export default function ActivityRoute() {
 
 function Activity({ activityId }: { activityId: ActivityId }) {
   const navigate = useNavigate()
-  const { memories, logEvent, recordSessionExperience, requestAssistantAction } = useApp()
+  const { memories, preferences, logEvent, recordSessionExperience, requestAssistantAction } = useApp()
   const accentColor = useApp((s) => s.preferences.favoriteColors[0])
   const accent = accentColor && accentColor in COLOR_MAP ? COLOR_MAP[accentColor as keyof typeof COLOR_MAP] : '#0B8A70'
   const [session] = useState(() => createActivitySession(activityId))
@@ -244,9 +245,9 @@ function Activity({ activityId }: { activityId: ActivityId }) {
   }
 
   const faces = buildFacePrompts(memories)
-  const patterns = buildPatternRounds(memories)
-  const sequences = buildSequenceRounds(memories, difficulty.sequenceLength)
-  const categories = buildCategoryRounds(memories)
+  const patterns = buildPatternRounds(memories, preferences)
+  const sequences = buildSequenceRounds(memories, difficulty.sequenceLength, preferences)
+  const categories = buildCategoryRounds(memories, preferences)
   const face = faces[roundIndex]
   const pattern = patterns[roundIndex]
   const sequence = sequences[roundIndex]
@@ -499,6 +500,11 @@ function Activity({ activityId }: { activityId: ActivityId }) {
             <button type="button" onClick={resume} className="btn-primary mt-4 w-full"><Play size={21} /> Resume activity</button>
             <button type="button" onClick={() => finish('break')} className="btn-soft mt-3 w-full">I'm done for now</button>
           </section>
+          <GameplaySupportSuggestion
+            activityId={activityId}
+            actions={['hint', 'easier', 'break']}
+            onChoose={(action: GameplaySupportAction) => askMo(action === 'hint' ? 'clue' : action)}
+          />
           {helpActions}
         </>
       ) : (

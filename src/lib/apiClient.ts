@@ -10,6 +10,7 @@ export class BackendApiError extends Error {
 }
 
 type RequestOptions = { method?: string; body?: unknown; signal?: AbortSignal }
+const API_BASE_URL = (import.meta.env.VITE_API_BASE_URL ?? '').trim().replace(/\/+$/, '')
 
 interface AuthUser {
   id: string
@@ -45,9 +46,9 @@ function entity<T>(value: unknown, label: string, textFields: string[], numberFi
 async function request(path: string, { method = 'GET', body, signal }: RequestOptions = {}): Promise<unknown> {
   let response: Response
   try {
-    response = await fetch(`/api${path}`, {
+    response = await fetch(`${API_BASE_URL}/api${path}`, {
       method,
-      credentials: 'same-origin',
+      credentials: API_BASE_URL ? 'include' : 'same-origin',
       signal,
       headers: body === undefined ? undefined : { 'Content-Type': 'application/json' },
       body: body === undefined ? undefined : JSON.stringify(body),
@@ -56,7 +57,7 @@ async function request(path: string, { method = 'GET', body, signal }: RequestOp
     if (signal?.aborted || (error instanceof Error && error.name === 'TimeoutError')) {
       throw new BackendApiError('Assistant request timed out.', 0, 'request_timeout')
     }
-    throw new BackendApiError('Anchor local data service is unavailable.', 0, 'backend_unavailable')
+    throw new BackendApiError('Anchor data service is unavailable. Check the connection and backend address, then try again.', 0, 'backend_unavailable')
   }
   if (response.status === 204) return undefined
 

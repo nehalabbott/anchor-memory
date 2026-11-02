@@ -13,12 +13,12 @@ export default function AssistantBar() {
   const toggle = useApp((s) => s.toggleAssistant)
   const nudging = useApp((s) => s.assistantNudging)
   return (
-    <div className="px-4 pb-2 pt-2 bg-mist/95">
+    <div className="px-3 pb-1 pt-1 sm:px-4 sm:pb-2 sm:pt-2 bg-mist/95">
       <button
         onClick={() => toggle(true)}
         aria-haspopup="dialog"
         aria-label={nudging ? 'Talk to Assistant. Mo is checking in on you.' : 'Talk to Assistant'}
-        className={`relative w-full min-h-[60px] rounded-pill border-2 font-display font-semibold text-lg
+        className={`relative w-full min-h-[56px] rounded-pill border-2 font-display font-semibold text-lg
                    flex items-center justify-center gap-3 active:scale-[.98] transition
                    ${nudging ? 'border-iris-main bg-iris-main text-white' : 'border-iris-main bg-iris-soft text-iris-deep'}`}
       >

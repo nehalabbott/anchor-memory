@@ -1,7 +1,0 @@
-<?xml version='1.0' encoding='utf-8'?>
-<resources>
-    <string name="app_name">Anchor</string>
-    <string name="title_activity_main">Anchor</string>
-    <string name="package_name">com.anchor.memory</string>
-    <string name="custom_url_scheme">com.anchor.memory</string>
-</resources>

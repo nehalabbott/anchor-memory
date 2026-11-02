@@ -1,7 +1,5 @@
 import { useEffect } from 'react'
-import { Outlet, useLocation, useNavigate } from 'react-router-dom'
-import { App as CapacitorApp } from '@capacitor/app'
-import { Capacitor } from '@capacitor/core'
+import { Outlet } from 'react-router-dom'
 import BottomNav from './BottomNav'
 import AssistantBar from './AssistantBar'
 import AssistantPanel from './AssistantPanel'
@@ -27,8 +25,6 @@ const COLOR_MAP = {
 } as const
 
 export default function Layout() {
-  const navigate = useNavigate()
-  const location = useLocation()
   const largeText = useApp((s) => s.largeText)
   const preferences = useApp((s) => s.preferences)
   const dataSyncStatus = useApp((s) => s.dataSyncStatus)
@@ -60,31 +56,6 @@ export default function Layout() {
       window.clearInterval(retryTimer)
     }
   }, [])
-  useEffect(() => {
-    if (!Capacitor.isNativePlatform()) return
-    let active = true
-    let removeListener: (() => void) | undefined
-    void CapacitorApp.addListener('backButton', ({ canGoBack }) => {
-      if (useApp.getState().assistantOpen) {
-        useApp.getState().toggleAssistant(false)
-        return
-      }
-      if (canGoBack && window.history.state?.idx > 0) {
-        navigate(-1)
-        return
-      }
-      if (location.pathname !== '/') {
-        navigate(location.pathname.startsWith('/games/') ? '/games' : '/', { replace: true })
-      }
-    }).then((listener) => {
-      if (active) removeListener = () => { void listener.remove() }
-      else void listener.remove()
-    })
-    return () => {
-      active = false
-      removeListener?.()
-    }
-  }, [location.pathname, navigate])
   return (
     <div className="h-full flex justify-center bg-garden-900/10">
       <div className={`relative h-full w-full max-w-[480px] flex flex-col bg-mist shadow-soft ${largeText ? 'text-[1.25rem]' : ''}`}>

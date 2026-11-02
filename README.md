@@ -32,9 +32,8 @@ Anchor addresses these challenges by combining personalized memory-based activit
 - **Promote familiarity and continuity:** Help users maintain connections with meaningful people, experiences and personal stories.
 - **Prioritize accessibility and usability:** Design an intuitive, inclusive interface that accommodates different interaction needs and levels of familiarity with technology.
 
-## Human-computer interaction
-
-Anchor explores accessible, personalized, and adaptive interaction while keeping assistance optional and preserving user control. See [Why this for our HCI project?](./WHY-THIS-FOR-OUR-HCI-PROJECT.md) for the project rationale.
+# How to run
+[Check out this document](./setup.md) 
 
 ## Team members
 
@@ -58,16 +57,9 @@ Anchor guides users through a simple journey, from preserving personal memories 
 
 The experience is designed to remain flexible and user-controlled rather than following a rigid sequence.
 
-## Support during activities
+## Human-computer interaction
 
-- **Adaptive difficulty:** Anchor tracks repeated rapid taps together with gameplay difficulty, such as incorrect or slow responses. When sustained struggle is detected, it can lower the difficulty for a later question or round; one tap or mistake alone does not trigger a frustration response.
-- **Optional help:** When repeated gameplay struggle is detected, the activity can offer support such as a hint, an easier version, or a break. Choosing help can ask Mo for a game-specific clue or simpler prompt. Advanced activities offer a hint.
-- **Inactivity check-ins:** After 20 seconds without interaction, Mo’s toolbar gives a gentle check-in. If there is still no activity after 40 seconds, Mo opens with a prompt grounded in the current screen. Touch, pointer, keyboard, and scroll activity reset the timers. Silence is treated as inactivity, not labeled as confusion.
-
-## Personalization and self-check
-
-- **Personalized games:** Profile settings let you choose a visual theme and favorite colors. Saved memories, interests, and favorite items can also supply familiar objects for game prompts.
-- **MoCA-style self-check:** Profile includes a short, optional cognitive self-check inspired by common screening tasks. It provides a score and suggested starting support level; it is not a medical diagnosis.
+Anchor explores accessible, personalized, and adaptive interaction while keeping assistance optional and preserving user control. See [Why this for our HCI project?](./WHY-THIS-FOR-OUR-HCI-PROJECT.md) for the project rationale.
 
 ## Technologies used
 
@@ -79,65 +71,6 @@ The experience is designed to remain flexible and user-controlled rather than fo
 - **Groq API and browser speech features** — optional server-backed Mo responses and optional voice input. Voice input depends on browser support and microphone permission; Mo requires the backend and a configured Groq API key.
 - **Accessibility and design** — large touch targets, readable text, simple instructions, multiple themes, and low-pressure feedback prioritize phone use.
 - **Phone preview** — a browser session over the local network. Keep the computer, backend, and Vite server running, and connect the phone to the same Wi-Fi.
-
-## Setup
-
-### Requirements
-
-- Node.js 20.17 or later and npm.
-- A Groq API key if you want Mo’s server-backed responses.
-- Phone preview: phone and development computer connected to the same Wi-Fi network.
-
-### Install and configure
-
-In PowerShell, clone the submission branch and install packages:
-
-```powershell
-git clone --branch final-submission --single-branch https://github.com/nehalabbott/anchor-memory.git
-Set-Location anchor-memory
-npm ci
-Copy-Item .env.example .env
-```
-
-Open `.env` and set `GROQ_API_KEY` to your own key. Keep it in this server-side file; do not put it in frontend variables or source code. The backend creates its SQLite database under `data/` when it starts.
-
-### Run on the computer
-
-Open two PowerShell terminals in the project directory. Keep both running:
-
-```powershell
-# Terminal 1: API, database, and Mo
-npm run server
-```
-
-```powershell
-# Terminal 2: browser app
-npm run dev
-```
-
-Open `http://localhost:5173` on the computer.
-
-### Run on a phone browser
-
-Use the same backend command in Terminal 1. Start Vite with a network-accessible host in Terminal 2:
-
-```powershell
-npm run dev -- --host 0.0.0.0
-```
-
-Open the **Network** URL printed by Vite on the phone (for example, `http://192.168.1.25:5173`). Both devices must be on the same Wi-Fi, and the computer firewall must allow the development server. The API accepts HTTP requests from private-network addresses on Vite's development port, so the changing phone URL does not need to be added to `CORS_ORIGINS`. The address can change when the computer reconnects; use the current Network URL. Restart `npm run server` after changing `.env`.
-
-## Useful commands
-
-```powershell
-npm run typecheck
-npm test
-npm run build
-npm run preview
-npm run server
-```
-
-`npm run preview` serves the production build on the computer; use the Vite development server with `--host 0.0.0.0` for phone testing on the local network.
 
 ## Project map
 

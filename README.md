@@ -22,7 +22,8 @@ Anchor explores accessible, personalized, and adaptive interaction while keeping
 
 ## Team members
 
-- **Member A** — Lead
+- **Member A** : Nehal
+- **Member B** : Sonu
 
 ## App flow
 
@@ -128,8 +129,6 @@ npm run server
 ## GitHub collaboration and documentation
 
 - **Repository:** https://github.com/nehalabbott/anchor-memory
-- **Working branch:** `final-submission`
 - **Presentation (PPT):**
 - **Demo video:**
 
-README documentation covers the project overview, architecture and design decisions, setup, execution, phone-browser preview, and useful validation commands.

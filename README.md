@@ -63,14 +63,32 @@ Anchor explores accessible, personalized, and adaptive interaction while keeping
 
 ## Technologies used
 
-- **React and TypeScript** — component-based interface and typed activity, memory, and API models.
-- **Vite and Tailwind CSS** — frontend development server, production bundling, API proxy, and styling.
-- **Node.js** — API and Mo endpoint. The Groq key stays on the server in `.env`; it is never built into browser assets.
-- **SQLite** — local backend persistence, with migrations and repository modules separating storage from request handling.
-- **Zustand, browser storage, and IndexedDB** — app state and preferences, cached records, and photo/audio blobs.
-- **Groq API and browser speech features** — optional server-backed Mo responses and optional voice input. Voice input depends on browser support and microphone permission; Mo requires the backend and a configured Groq API key.
-- **Accessibility and design** — large touch targets, readable text, simple instructions, multiple themes, and low-pressure feedback prioritize phone use.
-- **Phone preview** — a browser session over the local network. Keep the computer, backend, and Vite server running, and connect the phone to the same Wi-Fi.
+Anchor uses a full-stack architecture combining web technologies, persistent storage, AI integration and browser-native capabilities.
+
+### Frontend
+- **React** – Component-based UI development.
+- **TypeScript** – Type safety and maintainable application logic.
+- **CSS** – Responsive layouts and interface styling.
+
+### Backend
+- **Node.js** – Server-side JavaScript runtime.
+- **Express.js** – REST API development and request handling.
+
+### Database & Storage
+- **SQLite** – Persistent storage for structured application data.
+- **IndexedDB** – Browser-side storage for locally persisted data.
+
+### AI Integration
+- **Groq API** – LLM-powered conversational assistance and contextual interactions through Mo.
+
+### Browser APIs & Integrations
+- **Web Speech API** – Browser-based speech recognition and synthesis, where supported.
+- **Browser Audio APIs** – Audio playback and interaction within the application.
+
+### Development Tools
+- **Git & GitHub** – Version control and source code management.
+- **npm** – Dependency management and project scripts.
+- **Vite** – Frontend development and build tooling.
 
 ## Project map
 

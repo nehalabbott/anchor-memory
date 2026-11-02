@@ -2,19 +2,35 @@
 
 ## Project introduction
 
-Anchor is a phone-friendly memory and activity web app for older adults. It combines caregiver-added familiar memories, personalized games, the Mo assistant, and a reflective Memory Aquarium. Anchor is a supportive tool, not a medical diagnostic product.
+### Every memory has a story. Give it a place to stay.
+
+Memories are more than facts to remember, they are people, places, conversations, and little moments that make up who we are. Yet, for individuals experiencing memory difficulties, holding on to these connections can become increasingly challenging.
+
+**Anchor** is a personalized memory companion designed to make remembering more familiar, engaging, and comforting. It brings together personal memory management, interactive cognitive activities, and conversational assistance in one space.
+
+Users can preserve meaningful memories, revisit familiar stories, and engage with cognitive games built around recognition, patterns, and recall. At the heart of the experience is **Mo**, a context-aware conversational companion that offers gentle guidance, optional hints, simplified questions, and breaks when activities become challenging.
+
+The experience extends beyond games through **Memory Aquarium** — a calming interactive environment where users can pause, unwind, and reconnect with their saved memories.
+
+Rather than treating memory support as a series of isolated exercises, Anchor brings together personal context, cognitive engagement, and supportive interaction to create an experience that feels familiar and personal.
+
+**Anchor is not a medical or diagnostic tool. It is a space for preserving meaningful connections and making everyday interactions with memories more approachable.**
 
 ## Problem statement
 
-People experiencing memory or cognitive changes can find generic activities unfamiliar, difficult, or stressful. Caregivers also need approachable ways to add personally meaningful context and support gentle engagement. Anchor addresses this by pairing familiar memories and interests with accessible activities, optional assistance, and low-pressure feedback.
+Generic cognitive activities often lack the personal context needed to make them familiar and engaging for individuals experiencing memory or cognitive difficulties. Activities that feel unfamiliar or too challenging can also lead to frustration and disengagement.
+
+Caregivers need accessible ways to incorporate meaningful personal memories into everyday activities while providing appropriate support without taking away user independence.
+
+Anchor addresses these challenges by combining personalized memory-based activities, adaptive assistance, and familiar experiences in a low-pressure, user-controlled environment.
 
 ## Objectives
 
-- Offer accessible, phone-friendly memory activities grounded in a person's familiar memories and interests.
-- Adapt game difficulty and offer optional hints, simpler prompts, and breaks when support may help.
-- Provide Mo for conversational, screen-aware assistance and gentle inactivity check-ins.
-- Give users control over personalization, privacy, and whether to use optional voice features.
-- Provide an optional MoCA-style self-check for a support-oriented starting point, without presenting it as a diagnosis.
+- **Make memory support personal:** Ground everyday cognitive engagement in experiences, relationships and information that are meaningful to each individual.
+- **Encourage independent participation:** Create an environment where users can engage at their own pace, make choices and seek assistance when needed.
+- **Reduce interaction-related frustration:** Make activities approachable through responsive difficulty adjustments and supportive feedback.
+- **Promote familiarity and continuity:** Help users maintain connections with meaningful people, experiences and personal stories.
+- **Prioritize accessibility and usability:** Design an intuitive, inclusive interface that accommodates different interaction needs and levels of familiarity with technology.
 
 ## Human-computer interaction
 
@@ -22,16 +38,25 @@ Anchor explores accessible, personalized, and adaptive interaction while keeping
 
 ## Team members
 
-- **Member A** : Nehal
-- **Member B** : Sonu
+Post project contribution: 
 
-## App flow
+- **Nehal** : Documentation & Github
+- **Sonu** : PPT & Video
 
-1. Open Anchor in a browser and sign in or create an account. If the backend is unavailable, the sign-in screen can offer access to data already saved on that device.
-2. Add or update the person’s details and memories. Entries can include names, relationships, stories, places, activities, events, photos, and voice recordings.
-3. Choose an activity. Personal memories and preferences can supply familiar prompts and objects; the activities provide hints, retries, and support to take a break.
-4. Open Mo for conversational help, a clue, a simpler prompt, or a pause. Mo can use the current screen and saved context to tailor its reply.
-5. Visit the Memory Aquarium to revisit a saved story and optionally listen to water ambience. Profile settings control text size, voice, privacy, theme, and personalization.
+In project contribution:
+
+## App Flow
+
+Anchor guides users through a simple journey, from preserving personal memories to engaging with them through familiar activities.
+
+1. **Get Started:** Sign in and access a personalized space.
+2. **Build a Memory Collection:** Add meaningful memories, including people, relationships, experiences and familiar details.
+3. **Explore Cognitive Activities:** Choose from memory-based games designed around recognition, recall and pattern-based tasks.
+4. **Receive Support When Needed:** Mo provides optional hints, simpler prompts or break suggestions when users encounter difficulty.
+5. **Revisit and Reflect:** Return to saved memories through familiar stories and the Memory Aquarium.
+6. **Continue at Your Own Pace:** Move between activities, revisit memories or take a break whenever desired.
+
+The experience is designed to remain flexible and user-controlled rather than following a rigid sequence.
 
 ## Support during activities
 
@@ -39,6 +64,16 @@ Anchor explores accessible, personalized, and adaptive interaction while keeping
 - **Optional help:** When repeated gameplay struggle is detected, the activity can offer support such as a hint, an easier version, or a break. Choosing help can ask Mo for a game-specific clue or simpler prompt. Advanced activities offer a hint.
 - **Inactivity check-ins:** After 20 seconds without interaction, Mo’s toolbar gives a gentle check-in. If there is still no activity after 40 seconds, Mo opens with a prompt grounded in the current screen. Touch, pointer, keyboard, and scroll activity reset the timers. Silence is treated as inactivity, not labeled as confusion.
 
+flowchart TD
+    A[Sign In] --> B[Build Memory Collection]
+    B --> C[Choose Cognitive Activity]
+    C --> D[Play and Interact]
+    D --> E{Need Support?}
+    E -->|Yes| F[Mo: Hints / Simpler Prompts / Break]
+    F --> D
+    E -->|No| G[Complete Activity]
+    G --> H[Revisit Memories]
+    H --> I[Continue or Take a Break]
 ## Personalization and self-check
 
 - **Personalized games:** Profile settings let you choose a visual theme and favorite colors. Saved memories, interests, and favorite items can also supply familiar objects for game prompts.

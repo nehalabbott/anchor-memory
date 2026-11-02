@@ -1,6 +1,28 @@
 # Anchor
 
-Anchor is a phone-friendly memory and activity web app for older adults. It combines caregiver-added familiar memories, gentle games, the Mo assistant, and a reflective Memory Aquarium. It is a supportive tool, not a medical diagnostic product.
+## Project introduction
+
+Anchor is a phone-friendly memory and activity web app for older adults. It combines caregiver-added familiar memories, personalized games, the Mo assistant, and a reflective Memory Aquarium. Anchor is a supportive tool, not a medical diagnostic product.
+
+## Problem statement
+
+People experiencing memory or cognitive changes can find generic activities unfamiliar, difficult, or stressful. Caregivers also need approachable ways to add personally meaningful context and support gentle engagement. Anchor addresses this by pairing familiar memories and interests with accessible activities, optional assistance, and low-pressure feedback.
+
+## Objectives
+
+- Offer accessible, phone-friendly memory activities grounded in a person's familiar memories and interests.
+- Adapt game difficulty and offer optional hints, simpler prompts, and breaks when support may help.
+- Provide Mo for conversational, screen-aware assistance and gentle inactivity check-ins.
+- Give users control over personalization, privacy, and whether to use optional voice features.
+- Provide an optional MoCA-style self-check for a support-oriented starting point, without presenting it as a diagnosis.
+
+## Human-computer interaction
+
+Anchor explores accessible, personalized, and adaptive interaction while keeping assistance optional and preserving user control. See [Why this for our HCI project?](./WHY-THIS-FOR-OUR-HCI-PROJECT.md) for the project rationale.
+
+## Team members
+
+- **Member A** — Lead
 
 ## App flow
 
@@ -21,16 +43,16 @@ Anchor is a phone-friendly memory and activity web app for older adults. It comb
 - **Personalized games:** Profile settings let you choose a visual theme and favorite colors. Saved memories, interests, and favorite items can also supply familiar objects for game prompts.
 - **MoCA-style self-check:** Profile includes a short, optional cognitive self-check inspired by common screening tasks. It provides a score and suggested starting support level; it is not a medical diagnosis.
 
-## Design and technology decisions
+## Technologies used
 
-- **React and TypeScript** provide a component-based interface and typed activity, memory, and API models.
-- **Vite** serves the browser app, builds production assets, and proxies `/api` requests during local development.
-- **Node.js** hosts the API and Mo endpoint. The Groq key stays on the server in `.env`; it is never built into browser assets.
-- **SQLite** stores accounts and application data in the local backend. Database migrations and repository modules keep persistence separate from request handling.
-- **Zustand and browser storage** keep app preferences and cached records available between browser visits. IndexedDB stores photo/audio blobs separately from small metadata records.
-- **Large touch targets, readable text, simple instructions, multiple themes, and low-pressure feedback** prioritize phone use and accessibility.
-- **Mo and browser speech features are optional.** Voice input depends on browser speech recognition support and microphone permission. Mo requires the backend and a configured Groq API key.
-- **The phone preview is a browser session over the local network.** Keep the computer, backend, and Vite server running, and connect the phone to the same Wi-Fi.
+- **React and TypeScript** — component-based interface and typed activity, memory, and API models.
+- **Vite and Tailwind CSS** — frontend development server, production bundling, API proxy, and styling.
+- **Node.js** — API and Mo endpoint. The Groq key stays on the server in `.env`; it is never built into browser assets.
+- **SQLite** — local backend persistence, with migrations and repository modules separating storage from request handling.
+- **Zustand, browser storage, and IndexedDB** — app state and preferences, cached records, and photo/audio blobs.
+- **Groq API and browser speech features** — optional server-backed Mo responses and optional voice input. Voice input depends on browser support and microphone permission; Mo requires the backend and a configured Groq API key.
+- **Accessibility and design** — large touch targets, readable text, simple instructions, multiple themes, and low-pressure feedback prioritize phone use.
+- **Phone preview** — a browser session over the local network. Keep the computer, backend, and Vite server running, and connect the phone to the same Wi-Fi.
 
 ## Setup
 
@@ -105,7 +127,6 @@ npm run server
 
 ## GitHub collaboration and documentation
 
-- **Lead:** Member A
 - **Repository:** https://github.com/nehalabbott/anchor-memory
 - **Working branch:** `final-submission`
 - **Presentation (PPT):**

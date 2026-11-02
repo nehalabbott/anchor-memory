@@ -1,4 +1,5 @@
 // Defines validated HTTP routes for accounts, memories, activity data, and Mo.
+import { isIP } from 'node:net'
 import { SUPPORTED_PERSON_ID } from './repositories/personRepository.js'
 import {
   ApiError, assertAllowedKeys, boundedJsonObject, optionalInteger, optionalString, requireObject,
@@ -16,6 +17,7 @@ const ASSISTANT_BODY_LIMIT = 256_000
 const EVENT_BODY_LIMIT = 512_000
 const EVENT_ITEM_LIMIT = 16_384
 const ASSESSMENT_DATA_LIMIT = 32_768
+const VITE_DEV_PORT = '5173'
 const RELATIONSHIPS = new Set(['son', 'daughter', 'spouse', 'grandchild', 'grandparent', 'friend', 'other'])
 const MEMORY_KINDS = new Set(['person', 'story', 'place', 'activity', 'object', 'event', 'sequence'])
 const EVENT_TYPES = new Set([
@@ -46,6 +48,28 @@ function send(response, status, body) {
   response.setHeader('Content-Type', 'application/json; charset=utf-8')
   response.setHeader('Cache-Control', 'no-store')
   response.end(JSON.stringify(body))
+}
+
+function isPrivateDevelopmentHost(hostname) {
+  if (hostname === 'localhost') return true
+  if (isIP(hostname) !== 4) return false
+  const [first, second] = hostname.split('.').map(Number)
+  return first === 10 || first === 127 ||
+    (first === 172 && second >= 16 && second <= 31) ||
+    (first === 192 && second === 168)
+}
+
+function isAllowedOrigin(origin, allowedOrigins) {
+  if (allowedOrigins.includes(origin)) return true
+  try {
+    const originUrl = new URL(origin)
+    return originUrl.origin === origin &&
+      originUrl.protocol === 'http:' &&
+      originUrl.port === VITE_DEV_PORT &&
+      isPrivateDevelopmentHost(originUrl.hostname)
+  } catch {
+    return false
+  }
 }
 
 function decodeId(value) {
@@ -392,7 +416,9 @@ export function createApiHandler({ repositories, assistantHandler, groqConfigure
     try {
       const origin = request.headers.origin
       if (origin) {
-        if (!allowedOrigins.includes(origin)) throw new ApiError(403, 'This application origin is not allowed.', 'origin_not_allowed')
+        if (!isAllowedOrigin(origin, allowedOrigins)) {
+          throw new ApiError(403, 'This application origin is not allowed.', 'origin_not_allowed')
+        }
         response.setHeader('Access-Control-Allow-Origin', origin)
         response.setHeader('Access-Control-Allow-Credentials', 'true')
         response.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, PATCH, DELETE, OPTIONS')

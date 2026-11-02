@@ -1,4 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { request as httpRequest } from 'node:http'
 import { mkdtemp, rm } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
@@ -29,6 +30,17 @@ async function api(path, { method = 'GET', body, headers = jsonHeaders } = {}) {
     method,
     headers: body === undefined && method === 'GET' ? undefined : headers,
     body: body === undefined ? undefined : typeof body === 'string' ? body : JSON.stringify(body),
+  })
+}
+
+function apiWithHeaders(path, headers) {
+  return new Promise((resolve, reject) => {
+    const request = httpRequest(`${baseUrl}${path}`, { headers }, (response) => {
+      response.resume()
+      response.on('end', () => resolve(response))
+    })
+    request.on('error', reject)
+    request.end()
   })
 }
 
@@ -74,6 +86,23 @@ describe('local application API', () => {
     expect(allowed.headers.get('access-control-allow-origin')).toBe('https://localhost')
     const blocked = await fetch(`${baseUrl}/api/health`, { headers: { Origin: 'https://unknown.example' } })
     expect(blocked.status).toBe(403)
+  })
+
+  it('allows private-network Vite origins but blocks public or unrelated origins', async () => {
+    const origin = 'http://192.168.1.25:5173'
+    const allowed = await apiWithHeaders('/api/health', { Origin: origin, Host: '127.0.0.1:8787' })
+    expect(allowed.statusCode).toBe(200)
+    expect(allowed.headers['access-control-allow-origin']).toBe(origin)
+
+    const mismatchedOrigin = await apiWithHeaders('/api/health', {
+      Origin: 'http://192.168.1.26:5174', Host: '127.0.0.1:8787',
+    })
+    expect(mismatchedOrigin.statusCode).toBe(403)
+
+    const publicOrigin = await apiWithHeaders('/api/health', {
+      Origin: 'http://8.8.8.8:5173', Host: '127.0.0.1:8787',
+    })
+    expect(publicOrigin.statusCode).toBe(403)
   })
 
   it('gets an empty person then creates and updates the stable supported person', async () => {

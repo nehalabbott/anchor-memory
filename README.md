@@ -100,7 +100,7 @@ Use the same backend command in Terminal 1. Start Vite with a network-accessible
 npm run dev -- --host 0.0.0.0
 ```
 
-Open the **Network** URL printed by Vite on the phone (for example, `http://192.168.1.25:5173`). Both devices must be on the same Wi-Fi, and the computer firewall must allow the development server. The address can change when the computer reconnects; use the current Network URL. Restart `npm run server` after changing `.env`.
+Open the **Network** URL printed by Vite on the phone (for example, `http://192.168.1.25:5173`). Both devices must be on the same Wi-Fi, and the computer firewall must allow the development server. The API accepts HTTP requests from private-network addresses on Vite's development port, so the changing phone URL does not need to be added to `CORS_ORIGINS`. The address can change when the computer reconnects; use the current Network URL. Restart `npm run server` after changing `.env`.
 
 ## Useful commands
 
@@ -131,4 +131,3 @@ npm run server
 - **Repository:** https://github.com/nehalabbott/anchor-memory
 - **Presentation (PPT):**
 - **Demo video:**
-
